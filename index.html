@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Mi Diario de Viajes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2=family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   /* ══ PALETA OSCURA (default) ══ */
   :root {
@@ -35,171 +35,197 @@
     transition: background 0.3s, color 0.3s;
   }
   html:not(.tema-claro) body {
-    background-image:
+    background-image: 
       radial-gradient(circle at 15% 40%, rgba(192,33,42,0.07) 0%, transparent 45%),
       radial-gradient(circle at 85% 15%, rgba(192,33,42,0.03) 0%, transparent 35%);
   }
   html.tema-claro body {
-    background-image:
+    background-image: 
       radial-gradient(circle at 20% 50%, rgba(192,98,42,0.06) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, rgba(58,107,138,0.05) 0%, transparent 40%);
   }
 
-  /* ══ VISTAS ══ */
-  .vista { display: none; }
-  .vista.activa { display: block; }
-
-  /* ══ HEADER ══ */
-  header {
-    padding: 16px 20px 13px;
-    position: sticky; top: 0; z-index: 100;
-    display: flex; align-items: center; gap: 12px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.3s, border-color 0.3s;
+  /* Capa de Autenticación Integrada */
+  #auth-overlay {
+    position: fixed; inset: 0; background: var(--grey1); z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
   }
-  html:not(.tema-claro) header { background: var(--grey2); }
-  html.tema-claro        header { background: #1a1410; border-bottom-color: #2a1f18; }
-
-  .btn-back {
-    background: none; border: none; font-size: 22px;
-    cursor: pointer; padding: 0 4px; line-height: 1;
-    display: none; flex-shrink: 0;
+  .btn-auth {
+    background: var(--red); color: white; border: none; padding: 13px 26px;
+    border-radius: 50px; font-size: 15px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; transition: background 0.2s;
   }
-  html:not(.tema-claro) .btn-back { color: var(--grey8); }
-  html.tema-claro        .btn-back { color: #e8d9c4; }
+  .btn-auth:hover { background: var(--red-bright); }
+  .btn-auth:disabled { background: var(--grey5); cursor: not-allowed; opacity: 0.6; }
 
-  header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(16px, 4vw, 21px);
-    font-weight: 700; flex: 1;
-    min-width: 0; overflow: hidden;
-    text-overflow: ellipsis; white-space: nowrap;
-    transition: color 0.3s;
-  }
-  html:not(.tema-claro) header h1 { color: var(--grey9); }
-  html.tema-claro        header h1 { color: #f5ede0; }
-  header h1 span { color: var(--red-bright); font-style: italic; }
-
-  .breadcrumb {
-    font-size: 11px; color: var(--grey7);
-    letter-spacing: 0.3px; margin-top: 1px;
-    display: none;
-  }
-  .breadcrumb span { color: var(--red-bright); }
-  .header-title-wrap { flex: 1; min-width: 0; overflow: hidden; }
-  .header-title-wrap h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
-
-  /* Hub de Estado de Sincronización */
+  /* Hub Sincronización */
   .status-hub {
-    font-size: 11px; color: var(--grey7);
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 50px;
-    border: 1px solid var(--border);
+    font-size: 11px; color: var(--grey7); display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 50px; border: 1px solid var(--border);
   }
   html.tema-claro .status-hub { background: rgba(255,255,255,0.15); color: #e8d9c4; border-color: #4a3f35; }
   .status-dot { width: 7px; height: 7px; background: var(--grey6); border-radius: 50%; }
   .status-dot.sync { background: #00b37e; }
   .status-dot.saving { background: #e1b12c; animation: pulse 1s infinite; }
 
-  /* Capa de Autenticación */
-  #auth-overlay {
-    position: fixed; inset: 0; background: var(--grey1); z-index: 9999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
-  }
-  .btn-auth {
-    background: var(--red); color: white; border: none; padding: 13px 24px;
-    border-radius: 50px; font-size: 15px; font-weight: 500; cursor: pointer;
-    display: flex; align-items: center; gap: 8px; transition: background 0.2s;
-  }
-  .btn-auth:hover { background: var(--red-bright); }
+  /* ══ ESTRUCTURAS DE TU VISTA ORIGINAL ══ */
+  .vista { display: none; }
+  .vista.activa { display: block; }
 
-  /* Resto de tus estilos originales intactos */
+  header {
+    padding: 16px 20px 13px; position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  html:not(.tema-claro) header { background: var(--grey2); }
+  html.tema-claro header { background: #1a1410; border-bottom-color: #2a1f18; }
+
+  .btn-back {
+    background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1;
+    display: none; flex-shrink: 0;
+  }
+  html:not(.tema-claro) .btn-back { color: var(--grey8); }
+  html.tema-claro .btn-back { color: #e8d9c4; }
+
+  header h1 {
+    font-family: 'Playfair Display', serif; font-size: clamp(16px, 4vw, 21px); font-weight: 700;
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color 0.3s;
+  }
+  html:not(.tema-claro) header h1 { color: var(--grey9); }
+  html.tema-claro header h1 { color: #f5ede0; }
+  header h1 span { color: var(--red-bright); font-style: italic; }
+
+  .breadcrumb { font-size: 11px; color: var(--grey7); letter-spacing: 0.3px; margin-top: 1px; display: none; }
+  .breadcrumb span { color: var(--red-bright); }
+  .header-title-wrap { flex: 1; min-width: 0; overflow: hidden; }
+
+  .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
   .btn-add {
-    background: var(--red); color: white; border: none;
-    border-radius: 50px; padding: 9px 15px;
-    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
-    cursor: pointer; display: flex; align-items: center; gap: 5px;
-    transition: background 0.2s, transform 0.1s; white-space: nowrap;
+    background: var(--red); color: white; border: none; border-radius: 50px; padding: 9px 15px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 5px; transition: background 0.2s, transform 0.1s; white-space: nowrap;
   }
   .btn-add:active { transform: scale(0.96); }
-  .btn-add:hover  { background: var(--red-bright); }
+  .btn-add:hover { background: var(--red-bright); }
 
   .btn-menu {
-    border: none; font-size: 20px;
-    width: 36px; height: 36px; border-radius: 50%;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: background 0.2s; flex-shrink: 0;
+    border: none; font-size: 20px; width: 36px; height: 36px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; flex-shrink: 0;
   }
   html:not(.tema-claro) .btn-menu { background: var(--grey4); color: var(--grey8); }
-  html.tema-claro        .btn-menu { background: rgba(255,255,255,0.12); color: #e8d9c4; }
-  
-  .menu-wrapper { position: relative; }
-  .dropdown {
-    display: none; position: absolute; top: calc(100% + 8px); right: 0;
-    border-radius: 14px; min-width: 200px; overflow: hidden; z-index: 300;
-    border: 1px solid var(--grey5); box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  }
-  html:not(.tema-claro) .dropdown { background: var(--grey3); }
-  html.tema-claro        .dropdown { background: #fdf8f2; border-color: #d0bfa8; }
-  .dropdown.open { display: block; }
-  .dropdown-item {
-    display: flex; align-items: center; gap: 10px; padding: 13px 16px; font-size: 14px;
-    cursor: pointer; border: none; background: none; width: 100%; text-align: left; color: var(--grey9);
-  }
-  html:not(.tema-claro) .dropdown-item:hover { background: var(--grey4); }
-  html.tema-claro        .dropdown-item:hover { background: #f0e4d0; }
+  html.tema-claro .btn-menu { background: rgba(255,255,255,0.12); color: #e8d9c4; }
 
   .stats { display: flex; gap: 10px; padding: 14px 16px 6px; overflow-x: auto; scrollbar-width: none; }
-  .stat-card { border-radius: 12px; padding: 10px 16px; min-width: 90px; text-align: center; flex-shrink: 0; border: 1px solid var(--border); box-shadow: 0 2px 8px var(--shadow); }
-  html:not(.tema-claro) .stat-card { background: var(--grey3); }
-  html.tema-claro        .stat-card { background: #fffcf8; border-color: #e8d9c4; }
-  .stat-card .num { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--red-bright); }
-  .stat-card .label { font-size: 10px; color: var(--grey7); margin-top: 3px; text-transform: uppercase; }
+  .stats::-webkit-scrollbar { display: none; }
+  .stat-card {
+    border-radius: 16px; padding: 11px 14px; min-width: 95px; flex: 1; border: 1px solid var(--border);
+    box-shadow: 0 4px 14px var(--shadow); transition: background 0.3s, border-color 0.3s;
+  }
+  html:not(.tema-claro) .stat-card { background: var(--grey2); }
+  html.tema-claro .stat-card { background: var(--grey3); }
+  .stat-card .num { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--grey9); }
+  .stat-card .label { font-size: 10px; color: var(--grey7); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
 
-  .filters { padding: 11px 16px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; }
-  html:not(.tema-claro) .filters { background: var(--grey2); }
-  html.tema-claro        .filters { background: #e8d9c4; }
-  .filter-chip { border: 1.5px solid var(--grey5); background: transparent; color: var(--grey7); border-radius: 50px; padding: 6px 14px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .filters { padding: 11px 16px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    background: var(--grey3); border: 1px solid var(--border); color: var(--grey7); border-radius: 50px;
+    padding: 7px 14px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
   .filter-chip.active { background: var(--red); color: white; border-color: var(--red); }
 
-  .temporadas-grid { padding: 14px 16px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-  .temp-card { border-radius: 20px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 16px var(--shadow); cursor: pointer; position: relative; overflow: hidden; }
-  html:not(.tema-claro) .temp-card { background: var(--grey3); }
-  html.tema-claro        .temp-card { background: #fffcf8; border-color: #e8d9c4; }
-  .temp-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--red); }
-  .temp-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-  .temp-emoji { font-size: 32px; line-height: 1; }
+  /* GRID SISTEMAS */
+  .temporadas-grid { padding: 14px 16px 100px; display: flex; flex-direction: column; gap: 12px; }
+  .temp-card {
+    border-radius: 20px; padding: 18px 20px; border: 1px solid var(--border); box-shadow: 0 6px 20px var(--shadow);
+    cursor: pointer; position: relative; display: flex; flex-direction: column; gap: 12px; transition: transform 0.2s, background 0.3s;
+  }
+  html:not(.tema-claro) .temp-card { background: var(--grey2); }
+  html.tema-claro .temp-card { background: var(--grey3); }
+  .temp-card:active { transform: scale(0.99); }
+  .temp-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .temp-emoji-wrap { display: flex; align-items: center; gap: 12px; }
+  .temp-emoji { font-size: 28px; line-height: 1; }
   .temp-nombre { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; color: var(--grey9); }
-  .temp-del-btn { background: none; border: none; font-size: 14px; cursor: pointer; opacity: 0; padding: 4px; }
+  .temp-del-btn { background: none; border: none; font-size: 14px; cursor: pointer; opacity: 0; padding: 4px; z-index: 10; }
   .temp-card:hover .temp-del-btn { opacity: 0.4; }
-  .temp-del-btn:hover { opacity: 1 !important; background: rgba(192,33,42,0.15); }
+  .temp-del-btn:hover { opacity: 1 !important; }
 
-  .destinos-grid { padding: 12px 16px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
-  .dest-card { border-radius: 18px; padding: 18px 14px 14px; border: 1px solid var(--border); box-shadow: 0 3px 16px var(--shadow); cursor: pointer; position: relative; text-align: center; border-top: 3px solid var(--red); }
-  html:not(.tema-claro) .dest-card { background: var(--grey3); }
-  html.tema-claro        .dest-card { background: #fffcf8; border-color: #e8d9c4; }
-  .dest-emoji { font-size: 34px; display: block; margin-bottom: 9px; }
-  .dest-nombre { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; color: var(--grey9); }
+  .temp-destinos-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .temp-dest-chip {
+    background: var(--grey3); border: 1px solid var(--border); font-size: 11px; padding: 4px 8px; border-radius: 50px;
+    color: var(--grey7); display: inline-flex; align-items: center; gap: 4px;
+  }
+  html.tema-claro .temp-dest-chip { background: var(--grey4); color: var(--grey8); }
 
-  .items-grid { padding: 12px 16px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
-  .card { border-radius: 16px; padding: 18px; box-shadow: 0 3px 12px var(--shadow); position: relative; border: 1px solid var(--border); border-left: 4px solid var(--red); }
-  html:not(.tema-claro) .card { background: var(--grey3); }
-  html.tema-claro        .card { background: #fffcf8; border-color: #e8d9c4; }
-  .card[data-tipo="vuelo"]      { border-left-color: #5588aa; }
-  .card[data-tipo="hotel"]      { border-left-color: #557755; }
-  .card[data-tipo="actividad"]  { border-left-color: #8855aa; }
-  .card[data-tipo="transporte"] { border-left-color: #aa8833; }
-  .card[data-tipo="general"]    { border-left-color: var(--red); }
+  .temp-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 2px; }
+  .temp-stats-mini { display: flex; gap: 12px; font-size: 11px; color: var(--grey7); }
+  .temp-stats-mini strong { color: var(--grey9); font-weight: 500; }
+  .temp-open-btn { font-size: 11px; font-weight: 700; color: var(--red-bright); text-transform: uppercase; letter-spacing: 0.3px; }
 
-  /* Formularios Flotantes / Modales de tu UI original */
-  .fab-add { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--red); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 200; }
-  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 500; align-items: center; justify-content: center; padding: 16px; }
-  .modal.open { display: flex; }
-  .modal-content { background: var(--grey2); border: 1px solid var(--border); border-radius: 24px; padding: 24px; width: 100%; max-width: 400px; }
-  html.tema-claro .modal-content { background: #fffcf8; border-color: #e0ccb4; }
+  .destinos-grid { padding: 12px 16px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 11px; }
+  .dest-card {
+    border-radius: 18px; padding: 16px 12px 14px; border: 1px solid var(--border); box-shadow: 0 4px 14px var(--shadow);
+    cursor: pointer; position: relative; text-align: center; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.3s;
+  }
+  html:not(.tema-claro) .dest-card { background: var(--grey2); }
+  html.tema-claro .dest-card { background: var(--grey3); }
+  .btn-dest-del { background: none; border: none; font-size: 12px; cursor: pointer; opacity: 0; padding: 4px; }
+  .dest-card:hover .btn-dest-del { opacity: 0.4; }
+  .dest-emoji { font-size: 32px; display: block; margin-bottom: 6px; line-height: 1; }
+  .dest-nombre { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; color: var(--grey9); line-height: 1.2; margin-bottom: 4px; }
+  .dest-count { font-size: 10px; color: var(--grey7); }
+
+  .items-grid { padding: 12px 16px 100px; display: flex; flex-direction: column; gap: 11px; }
+  .card {
+    border-radius: 16px; padding: 14px 16px; box-shadow: 0 4px 14px var(--shadow); position: relative;
+    border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; transition: background 0.3s;
+  }
+  html:not(.tema-claro) .card { background: var(--grey2); }
+  html.tema-claro .card { background: var(--grey3); }
+  .card-header { display: flex; justify-content: space-between; align-items: center; }
+  .card-tipo { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
   
+  .card[data-tipo="vuelo"]      .card-tipo { background: rgba(85,136,170,0.15); color: #77aacc; }
+  .card[data-tipo="hotel"]      .card-tipo { background: rgba(85,119,85,0.15);  color: #77aa77; }
+  .card[data-tipo="actividad"]  .card-tipo { background: rgba(136,85,170,0.15); color: #cc77dd; }
+  .card[data-tipo="transporte"] .card-tipo { background: rgba(170,136,51,0.15);  color: #ddbb66; }
+  .card[data-tipo="general"]    .card-tipo { background: rgba(192,33,42,0.15);   color: var(--red-bright); }
+
+  .card-estrella { background: none; border: none; font-size: 13px; cursor: pointer; filter: grayscale(1); opacity: 0.3; }
+  .card-estrella.fav { filter: grayscale(0); opacity: 1; }
+  .card-titulo { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--grey9); margin-top: 2px; }
+  .card-precio { font-size: 14px; font-weight: 700; color: var(--red-bright); }
+  .card-notas { font-size: 12px; color: var(--grey7); line-height: 1.4; margin-top: 2px; white-space: pre-wrap; }
+
+  /* Modales */
+  .modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    z-index: 500; align-items: flex-end; padding: 0; backdrop-filter: blur(4px);
+  }
+  .modal.open { display: flex; }
+  .modal-content {
+    background: var(--grey2); border-top: 1px solid var(--border); border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px; width: 100%; max-height: 85vh; overflow-y: auto;
+    animation: slideUp 0.25s ease-out; display: flex; flex-direction: column; gap: 14px;
+  }
+  html.tema-claro .modal-content { background: #fffcf8; }
+  
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--grey7); }
+  .form-ctrl {
+    background: var(--grey3); border: 1px solid var(--border); color: var(--grey9); border-radius: 10px;
+    padding: 11px 14px; font-family: inherit; font-size: 14px; outline: none;
+  }
+  .form-ctrl:focus { border-color: var(--red-bright); }
+
+  @media (min-width: 480px) {
+    .modal { align-items: center; padding: 20px; }
+    .modal-content { border-radius: 20px; border: 1px solid var(--border); max-width: 380px; padding: 24px; }
+  }
   @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 </style>
 </head>
@@ -207,9 +233,9 @@
 
   <div id="auth-overlay">
     <h2 style="font-family: 'Playfair Display', serif; font-size: 26px; color: var(--red-bright);">Mi Diario de Viajes</h2>
-    <p style="color: var(--grey7); font-size: 14px;">Conectando de forma segura con tu Google Drive...</p>
-    <button class="btn-auth" id="btn-login" onclick="handleAuthClick()">
-        🔑 Conectar con Google Drive
+    <p id="auth-status-text" style="color: var(--grey7); font-size: 14px;">Preparando módulos de Google Identity...</p>
+    <button class="btn-auth" id="btn-login" onclick="handleAuthClick()" disabled>
+        ⏳ Cargando librerías...
     </button>
   </div>
 
@@ -282,41 +308,62 @@
     <div class="items-grid" id="lista-items"></div>
   </div>
 
-  <div id="modal-temp" class="modal">
+  <div id="modal-temp" class="modal" onclick="cerrarModalesExterno(event)">
     <div class="modal-content">
-      <h3 style="font-family:'Playfair Display'; margin-bottom:15px;">Nueva Temporada</h3>
-      <input type="text" id="in-temp-nombre" placeholder="Año o Bloque (Ej: 2026)" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
-      <input type="text" id="in-temp-emoji" placeholder="Emoji (Ej: 🗺️)" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
-      <button class="btn-add" style="width:100%; justify-content:center;" onclick="crearTemporada()">Crear Bloque</button>
-      <button class="btn-add" style="width:100%; justify-content:center; background:none; color:var(--grey7); margin-top:5px;" onclick="cerrarModales()">Cancelar</button>
+      <h3 style="font-family:'Playfair Display'; font-size:18px;">Nueva Temporada</h3>
+      <div class="form-group">
+        <label>Nombre del bloque</label>
+        <input type="text" id="in-temp-nombre" class="form-ctrl" placeholder="Ej: Europa 2026">
+      </div>
+      <div class="form-group">
+        <label>Emoji identificador</label>
+        <input type="text" id="in-temp-emoji" class="form-ctrl" value="🗺️">
+      </div>
+      <button class="btn-add" style="width:100%; padding:12px; justify-content:center; margin-top:6px;" onclick="crearTemporada()">Crear Bloque</button>
     </div>
   </div>
 
-  <div id="modal-dest" class="modal">
+  <div id="modal-dest" class="modal" onclick="cerrarModalesExterno(event)">
     <div class="modal-content">
-      <h3 style="font-family:'Playfair Display'; margin-bottom:15px;">Nuevo Destino</h3>
-      <input type="text" id="in-dest-nombre" placeholder="Ciudad o Región (Ej: Alsacia)" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
-      <input type="text" id="in-dest-emoji" placeholder="Emoji (Ej: 🎄)" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
-      <button class="btn-add" style="width:100%; justify-content:center;" onclick="crearDestino()">Crear Destino</button>
-      <button class="btn-add" style="width:100%; justify-content:center; background:none; color:var(--grey7); margin-top:5px;" onclick="cerrarModales()">Cancelar</button>
+      <h3 style="font-family:'Playfair Display'; font-size:18px;">Nuevo Destino</h3>
+      <div class="form-group">
+        <label>Nombre de la ruta</label>
+        <input type="text" id="in-dest-nombre" class="form-ctrl" placeholder="Ej: Alsacia y Selva Negra">
+      </div>
+      <div class="form-group">
+        <label>Emoji</label>
+        <input type="text" id="in-dest-emoji" class="form-ctrl" value="📍">
+      </div>
+      <button class="btn-add" style="width:100%; padding:12px; justify-content:center; margin-top:6px;" onclick="crearDestino()">Crear Destino</button>
     </div>
   </div>
 
-  <div id="modal-item" class="modal">
+  <div id="modal-item" class="modal" onclick="cerrarModalesExterno(event)">
     <div class="modal-content">
-      <h3 style="font-family:'Playfair Display'; margin-bottom:15px;">Añadir Reserva</h3>
-      <select id="in-item-tipo" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
-        <option value="general">💼 General</option>
-        <option value="vuelo">✈️ Vuelo</option>
-        <option value="hotel">🏨 Alojamiento</option>
-        <option value="actividad">🎟️ Actividad / Plan</option>
-        <option value="transporte">🚗 Ruta / Transporte</option>
-      </select>
-      <input type="text" id="in-item-titulo" placeholder="Título o Concepto" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
-      <input type="number" id="in-item-precio" placeholder="Precio (€)" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
-      <textarea id="in-item-notas" placeholder="Anotaciones, localizadores, enlaces..." rows="3" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9); resize:none;"></textarea>
-      <button class="btn-add" style="width:100%; justify-content:center;" onclick="crearItem()">Guardar Reserva</button>
-      <button class="btn-add" style="width:100%; justify-content:center; background:none; color:var(--grey7); margin-top:5px;" onclick="cerrarModales()">Cancelar</button>
+      <h3 style="font-family:'Playfair Display'; font-size:18px;">Añadir Reserva</h3>
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="in-item-tipo" class="form-ctrl">
+          <option value="general">💼 General</option>
+          <option value="vuelo">✈️ Vuelo</option>
+          <option value="hotel">🏨 Alojamiento</option>
+          <option value="actividad">🎟️ Actividad / Plan</option>
+          <option value="transporte">🚗 Ruta / Transporte</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Concepto o Título</label>
+        <input type="text" id="in-item-titulo" class="form-ctrl" placeholder="Ej: Vuelo Iberia IB0791">
+      </div>
+      <div class="form-group">
+        <label>Coste (€)</label>
+        <input type="number" id="in-item-precio" class="form-ctrl" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>Anotaciones / Localizadores</label>
+        <textarea id="in-item-notas" class="form-ctrl" rows="3" placeholder="Detalles..." style="resize:none;"></textarea>
+      </div>
+      <button class="btn-add" style="width:100%; padding:12px; justify-content:center; margin-top:6px;" onclick="crearItem()">Guardar Reserva</button>
     </div>
   </div>
 
@@ -329,72 +376,347 @@
     const SCOPES = 'https://www.googleapis.com/auth/drive.file';
     const FILE_NAME = 'config_viajes_app.json';
 
-    let gapiInited = false;
-    let gisInited = false;
-    let tokenClient;
+    let tokenClient = null;
     let fileId = null;
-
-    // Estado unificado original que se persistirá en la nube
-    let db = {
-      temporadas: [],
-      destinos: [],
-      items: []
-    };
+    let db = { temporadas: [], destinos: [], items: [] };
 
     let idTempActiva = null;
     let idDestActivo = null;
     let filtroTipoActivo = 'todos';
 
-    /* ══ CONTROLADORES APIS GOOGLE ══ */
-    function gapiLoaded() { gapi.load('client', initializeGapiClient); }
-    async function initializeGapiClient() {
-        await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
-        gapiInited = true;
-    }
-    function gisLoaded() {
-        tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID, scope: SCOPES,
-            callback: (resp) => {
-                if (resp.error !== undefined) throw (resp);
-                document.getElementById('auth-overlay').style.display = 'none';
-                startApp();
-            }
+    // Verificación de carga doble
+    let libGapiCargada = false;
+    let libGisCargada = false;
+
+    /* ══ SECUENCIA DE INICIALIZACIÓN CRUCIAL ══ */
+    function gapiLoaded() {
+        gapi.load('client', async () => {
+            await gapi.client.init({ apiKey: API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
+            libGapiCargada = true;
+            evaluarLibreriasListas();
         });
-        gisInited = true;
     }
 
-    function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
+    function gisLoaded() {
+        libGisCargada = true;
+        evaluarLibreriasListas();
+    }
 
-    async function startApp() {
+    function evaluarLibreriasListas() {
+        if (libGapiCargada && libGisCargada) {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: async (tokenRegresado) => {
+                    if (tokenRegresado.error !== undefined) {
+                        alert("Error autenticando con Google: " + tokenRegresado.error);
+                        throw (tokenRegresado);
+                    }
+                    document.getElementById('auth-overlay').style.display = 'none';
+                    await levantarAppDrive();
+                }
+            });
+            // Habilitar botón de login de forma segura
+            const btn = document.getElementById('btn-login');
+            btn.disabled = false;
+            btn.innerHTML = '🔑 Conectar con Google Drive';
+            document.getElementById('auth-status-text').innerText = 'Listo. Pulsa el botón para autorizar.';
+        }
+    }
+
+    function handleAuthClick() {
+        if (tokenClient) {
+            // Solicitar token de acceso al usuario de forma explícita
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+    }
+
+    async function levantarAppDrive() {
         try {
-            setSyncStatus('saving', 'Conectando...');
-            const response = await gapi.client.drive.files.list({ q: `name = '${FILE_NAME}' and trashed = false`, fields: 'files(id, name)' });
+            setSyncStatus('saving', 'Buscando nube...');
+            const response = await gapi.client.drive.files.list({ 
+                q: `name = '${FILE_NAME}' and trashed = false`, 
+                fields: 'files(id, name)' 
+            });
             const files = response.result.files;
             
             if (files.length > 0) {
                 fileId = files[0].id;
-                await loadDataFromDrive();
+                await cargarDatosDesdeDrive();
             } else {
-                await createInitialDriveFile();
+                await crearArchivoDriveInicial();
             }
             setSyncStatus('sync', 'Sincronizado');
             renderTodo();
         } catch (err) {
-            console.error(err);
-            setSyncStatus('none', 'Error Cloud');
+            console.error("Error cargando base de datos de Drive: ", err);
+            setSyncStatus('none', 'Desconectado');
         }
     }
 
-    async function loadDataFromDrive() {
+    async function cargarDatosDesdeDrive() {
         const response = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-        db = response.result;
+        db = response.result || { temporadas: [], destinos: [], items: [] };
         if (!db.temporadas) db.temporadas = [];
         if (!db.destinos) db.destinos = [];
         if (!db.items) db.items = [];
     }
 
-    async function createInitialDriveFile() {
+    async function crearArchivoDriveInicial() {
         db = {
-          temporadas: [{ id: "t_1", nombre: "Europa 2026", emoji: "🇪🇺" }],
+          temporadas: [{ id: "t_1", nombre: "Europa Occidental", emoji: "🇪🇺" }],
           destinos: [{ id: "d_1", temporadaId: "t_1", nombre: "Alsacia (Colmar y Estrasburgo)", emoji: "🎄" }],
-          items:
+          items: [
+            { id: "i_1", destinoId: "d_1", tipo: "vuelo", titulo: "Vuelos directos de ida y vuelta", precio: 150, notas: "Vuelo Iberia. Maletas facturadas incluidas.", fav: true },
+            { id: "i_2", destinoId: "d_1", tipo: "hotel", titulo: "Alojamiento centro Colmar", precio: 320, notas: "Apartamento con encanto tradicional." }
+          ]
+        };
+        await saveDataToDrive();
+    }
+
+    async function saveDataToDrive() {
+        if (!gapi.client.getToken()) return; // Prevenir guardados prematuros
+        setSyncStatus('saving', 'Sincronizando...');
+        
+        if (!fileId) {
+            const metadata = { name: FILE_NAME, mimeType: 'application/json' };
+            const resp = await gapi.client.drive.files.create({ resource: metadata, fields: 'id' });
+            fileId = resp.result.id;
+        }
+        
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(db)
+        });
+        setSyncStatus('sync', 'Sincronizado');
+    }
+
+    function setSyncStatus(type, text) {
+        ['1','2','3'].forEach(i => {
+          const dot = document.getElementById('sync-dot-' + i);
+          const txt = document.getElementById('sync-text-' + i);
+          if (dot && txt) { dot.className = 'status-dot ' + type; txt.innerText = text; }
+        });
+    }
+
+    /* ══ RENDERS DE INTERFAZ ══ */
+    function renderTodo() {
+        renderTemporadas();
+        renderStatsGlobales();
+    }
+
+    function renderStatsGlobales() {
+        document.getElementById('stat-tot-viajes').innerText = db.destinos.length;
+        document.getElementById('stat-tot-items').innerText = db.items.length;
+        const totalDinero = db.items.reduce((acc, curr) => acc + (parseFloat(curr.precio) || 0), 0);
+        document.getElementById('stat-tot-precio').innerText = totalDinero.toLocaleString('es-ES') + '€';
+    }
+
+    function renderTemporadas() {
+        const grid = document.getElementById('lista-temporadas');
+        grid.innerHTML = '';
+
+        db.temporadas.forEach(temp => {
+            const destinosAsociados = db.destinos.filter(d => d.temporadaId === temp.id);
+            const itemsAsociados = db.items.filter(i => destinosAsociados.some(d => d.id === i.destinoId));
+            const costeBloque = itemsAsociados.reduce((acc, curr) => acc + (parseFloat(curr.precio) || 0), 0);
+
+            const card = document.createElement('div');
+            card.className = 'temp-card';
+            card.onclick = () => verDestinos(temp.id);
+            card.innerHTML = `
+                <div class="temp-card-header">
+                  <div class="temp-emoji-wrap">
+                    <span class="temp-emoji">${temp.emoji || '📅'}</span>
+                    <span class="temp-nombre">${escapeHTML(temp.nombre)}</span>
+                  </div>
+                  <button class="temp-del-btn" onclick="borrarTemporada('${temp.id}'); event.stopPropagation();">🗑️</button>
+                </div>
+                <div class="temp-destinos-row">
+                  ${destinosAsociados.map(d => `<span class="temp-dest-chip">📍 ${escapeHTML(d.nombre)}</span>`).join('') || '<span style="font-size:11px; color:var(--grey6);">Sin destinos creados</span>'}
+                </div>
+                <div class="temp-footer">
+                  <div class="temp-stats-mini">
+                    <div><strong>${destinosAsociados.length}</strong> rutas</div>
+                    <div><strong>${costeBloque}€</strong> invertidos</div>
+                  </div>
+                  <div class="temp-open-btn">Abrir →</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function verDestinos(tempId) {
+        idTempActiva = tempId;
+        const temp = db.temporadas.find(t => t.id === tempId);
+        const b = document.getElementById('bread-destinos');
+        b.style.display = 'block';
+        b.querySelector('span').innerText = temp.nombre;
+        document.getElementById('titulo-vista-destinos').innerText = `${temp.emoji} ${temp.nombre}`;
+        cambiarVista('vista-destinos');
+        renderDestinos();
+    }
+
+    function renderDestinos() {
+        const grid = document.getElementById('lista-destinos');
+        grid.innerHTML = '';
+        const filtrados = db.destinos.filter(d => d.temporadaId === idTempActiva);
+        
+        if (filtrados.length === 0) {
+            grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--grey6); padding:40px 0; font-size:14px;">No hay destinos planificados aquí todavía.</p>`;
+            return;
+        }
+
+        filtrados.forEach(dest => {
+            const itemsDest = db.items.filter(i => i.destinoId === dest.id);
+            const costeDest = itemsDest.reduce((acc, curr) => acc + (parseFloat(curr.precio) || 0), 0);
+
+            const card = document.createElement('div');
+            card.className = 'dest-card';
+            card.onclick = () => verItems(dest.id);
+            card.innerHTML = `
+                <div style="position:absolute; top:8px; right:8px;">
+                  <button class="btn-dest-del" onclick="borrarDestino('${dest.id}'); event.stopPropagation();">🗑️</button>
+                </div>
+                <span class="dest-emoji">${dest.emoji || '📍'}</span>
+                <div class="dest-nombre">${escapeHTML(dest.nombre)}</div>
+                <div class="dest-count"><strong>${itemsDest.length}</strong> planes · <strong>${costeDest}€</strong></div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function verItems(destId) {
+        idDestActivo = destId;
+        const dest = db.destinos.find(d => d.id === destId);
+        const b = document.getElementById('bread-items');
+        b.style.display = 'block';
+        b.querySelector('span').innerText = dest.nombre;
+        document.getElementById('titulo-vista-items').innerText = `${dest.emoji} ${dest.nombre}`;
+        cambiarVista('vista-items');
+        renderItems();
+    }
+
+    function renderItems() {
+        const grid = document.getElementById('lista-items');
+        grid.innerHTML = '';
+        let filtrados = db.items.filter(i => i.destinoId === idDestActivo);
+        if (filtroTipoActivo !== 'todos') filtrados = filtrados.filter(i => i.tipo === filtroTipoActivo);
+
+        if (filtrados.length === 0) {
+            grid.innerHTML = `<p style="text-align:center; color:var(--grey6); padding:40px 0; font-size:14px;">No hay reservas registradas.</p>`;
+            return;
+        }
+
+        filtrados.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('data-tipo', item.tipo);
+            card.innerHTML = `
+                <div class="card-header">
+                  <span class="card-tipo">${item.tipo}</span>
+                  <button class="card-estrella ${item.fav ? 'fav' : ''}" onclick="toggleFavItem('${item.id}'); event.stopPropagation();">⭐</button>
+                </div>
+                <div class="card-titulo">${escapeHTML(item.titulo)}</div>
+                <div class="card-precio">${item.precio ? item.precio + ' €' : '0 €'}</div>
+                <div class="card-notas">${item.notas ? escapeHTML(item.notas) : 'Sin notas.'}</div>
+                <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                  <button class="btn-dest-del" style="opacity:0.3; font-size:11px;" onclick="borrarItem('${item.id}'); event.stopPropagation();">🗑️ Eliminar</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    /* ══ OPERACIONES CRUD ══ */
+    function abrirModalTemp() { document.getElementById('modal-temp').classList.add('open'); }
+    function abrirModalDestino() { document.getElementById('modal-dest').classList.add('open'); }
+    function abrirModalItem() { document.getElementById('modal-item').classList.add('open'); }
+    function cerrarModales() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('open')); }
+    function cerrarModalesExterno(e) { if(e.target.classList.contains('modal')) cerrarModales(); }
+
+    async function crearTemporada() {
+        const nombre = document.getElementById('in-temp-nombre').value.trim();
+        const emoji = document.getElementById('in-temp-emoji').value.trim() || '🗺️';
+        if (!nombre) return;
+        db.temporadas.push({ id: 't_' + Date.now(), nombre, emoji });
+        document.getElementById('in-temp-nombre').value = '';
+        cerrarModales(); renderTodo(); await saveDataToDrive();
+    }
+
+    async function crearDestino() {
+        const nombre = document.getElementById('in-dest-nombre').value.trim();
+        const emoji = document.getElementById('in-dest-emoji').value.trim() || '📍';
+        if (!nombre || !idTempActiva) return;
+        db.destinos.push({ id: 'd_' + Date.now(), temporadaId: idTempActiva, nombre, emoji });
+        document.getElementById('in-dest-nombre').value = '';
+        cerrarModales(); renderDestinos(); renderStatsGlobales(); await saveDataToDrive();
+    }
+
+    async function crearItem() {
+        const tipo = document.getElementById('in-item-tipo').value;
+        const titulo = document.getElementById('in-item-titulo').value.trim();
+        const precio = parseFloat(document.getElementById('in-item-precio').value) || 0;
+        const notas = document.getElementById('in-item-notas').value.trim();
+        if (!titulo || !idDestActivo) return;
+        db.items.push({ id: 'i_' + Date.now(), destinoId: idDestActivo, tipo, titulo, precio, notas, fav: false });
+        document.getElementById('in-item-titulo').value = '';
+        document.getElementById('in-item-precio').value = '';
+        document.getElementById('in-item-notas').value = '';
+        cerrarModales(); renderItems(); renderStatsGlobales(); await saveDataToDrive();
+    }
+
+    async function borrarTemporada(id) {
+        if (!confirm("¿Eliminar bloque anual?")) return;
+        db.temporadas = db.temporadas.filter(t => t.id !== id);
+        const dests = db.destinos.filter(d => d.temporadaId === id);
+        db.destinos = db.destinos.filter(d => d.temporadaId !== id);
+        db.items = db.items.filter(i => !dests.some(d => d.id === i.destinoId));
+        renderTodo(); await saveDataToDrive();
+    }
+
+    async function borrarDestino(id) {
+        if (!confirm("¿Eliminar destino?")) return;
+        db.destinos = db.destinos.filter(d => d.id !== id);
+        db.items = db.items.filter(i => i.destinoId !== id);
+        renderDestinos(); renderStatsGlobales(); await saveDataToDrive();
+    }
+
+    async function borrarItem(id) {
+        db.items = db.items.filter(i => i.id !== id);
+        renderItems(); renderStatsGlobales(); await saveDataToDrive();
+    }
+
+    async function toggleFavItem(id) {
+        const item = db.items.find(i => i.id === id);
+        if (item) item.fav = !item.fav;
+        renderItems(); await saveDataToDrive();
+    }
+
+    function filtrarTipo(tipo) {
+        filtroTipoActivo = tipo;
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        event.target.classList.add('active');
+        renderItems();
+    }
+
+    function cambiarVista(idVista) {
+        document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+        document.getElementById(idVista).classList.add('activa');
+        const btnBacks = document.querySelectorAll('.btn-back');
+        if (idVista === 'vista-temporadas') btnBacks.forEach(b => b.style.display = 'none');
+        else btnBacks.forEach(b => b.style.display = 'block');
+    }
+
+    function irATemporadas() { cambiarVista('vista-temporadas'); renderTodo(); }
+    function irADestinos() { cambiarVista('vista-destinos'); renderDestinos(); }
+    function toggleTema() { document.documentElement.classList.toggle('tema-claro'); }
+    function escapeHTML(str) { return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)); }
+  </script>
+</body>
+</html>
