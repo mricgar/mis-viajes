@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mi Diario de Viajes · Drive Sync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+<style>
+  /* ══ PALETA OSCURA (default) ══ */
+  :root {
+    --red: #c0212a; --red-bright: #e03a44;
+    --grey1: #0d0d0d; --grey2: #141414; --grey3: #1e1e1e;
+    --grey4: #2a2a2a; --grey5: #3a3a3a; --grey6: #555;
+    --grey7: #888; --grey8: #bbb; --grey9: #e8e8e8;
+    --border: #2e2e2e; --shadow: rgba(0,0,0,0.45);
+    --bg-main: var(--grey1);
+    --accent: var(--red);
+  }
+
+  /* ══ PALETA CLARA ══ */
+  html.tema-claro {
+    --red: #c0622a; --red-bright: #f47b35;
+    --grey1: #fcfcfc; --grey2: #f3f3f3; --grey3: #e8e8e8;
+    --grey4: #dadada; --grey5: #b5b5b5; --grey6: #888;
+    --grey7: #666;   --grey8: #333;   --grey9: #111;
+    --border: #d4d4d4; --shadow: rgba(0,0,0,0.08);
+    --bg-main: var(--grey1);
+    --accent: var(--red);
+  }
+
+  /* Capa de Autenticación con Google */
+  #auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--grey1);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    color: var(--grey9);
+  }
+
+  .btn-auth {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+  }
+  .btn-auth:hover { background: var(--red-bright); }
+
+  /* Indicador Hub Estado Sincronización */
+  .status-hub {
+    font-size: 13px;
+    color: var(--grey7);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    background: var(--grey6);
+    border-radius: 50%;
+  }
+  .status-dot.sync { background: #00b37e; }
+  .status-dot.saving { background: #e1b12c; animation: pulse 1s infinite; }
+
+  /* Estilos Base del Layout original heredado */
+  * { box-sizing: border-box; margin:0; padding:0; font-family: 'DM Sans', sans-serif; }
+  body { background: var(--grey1); color: var(--grey9); display: flex; height: 100vh; overflow: hidden; }
+
+  /* REUTILIZACIÓN DE TUS ESTILOS ORIGINALES PRINCIPALES (Resumidos para optimizar espacio) */
+  #app-container { display: flex; width: 100vw; height: 100vh; position: relative; }
+  
+  /* Sidebar Lateral */
+  .sidebar { width: 320px; background: var(--grey2); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; transition: transform 0.3s ease; }
+  .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .sidebar-header h1 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--red-bright); }
+  
+  .lista-scroll { flex:1; overflow-y: auto; padding: 15px; }
+  .temporada-item { margin-bottom: 15px; background: var(--grey3); border-radius: 8px; padding: 4px; }
+  .temp-title-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; font-weight: bold; font-size: 14px; color: var(--grey7); cursor:pointer;}
+  .destino-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; margin: 4px 0; border-radius: 6px; cursor: pointer; color: var(--grey8); font-size: 14px; }
+  .destino-item:hover, .destino-item.activo { background: var(--grey4); color: var(--grey9); }
+  .destino-item.activo { border-left: 3px solid var(--red); }
+
+  /* Contenido principal */
+  .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--grey1); }
+  .top-bar { height: 65px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: var(--grey2); }
+  .work-area { flex: 1; overflow-y: auto; padding: 25px; display: none; }
+  
+  /* Pestañas internas */
+  .tabs-nav { display: flex; gap: 5px; border-bottom: 1px solid var(--border); margin-bottom: 20px; padding-bottom: 1px; }
+  .tab-btn { padding: 10px 20px; background: none; border: none; color: var(--grey7); cursor: pointer; font-weight: 500; font-size: 14px; position: relative; }
+  .tab-btn.activo { color: var(--red-bright); font-weight: 700; }
+  .tab-btn.activo::after { content:''; position: absolute; bottom: -2px; left:0; right:0; height: 3px; background: var(--red-bright); border-radius: 2px; }
+  
+  .tab-pane { display: none; }
+  .tab-pane.activo { display: block; }
+
+  /* Bloques de Diarios, Notas y Checklists heredados */
+  .editor-textarea { width: 100%; height: 450px; background: var(--grey2); color: var(--grey9); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 15px; line-height: 1.6; resize: none; outline: none; }
+  .editor-textarea:focus { border-color: var(--red); }
+  
+  .presupuesto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 25px; }
+  .p-card { background: var(--grey2); border:1px solid var(--border); border-radius: 10px; padding: 15px; }
+  .p-card h4 { font-size:12px; text-transform: uppercase; color:var(--grey7); margin-bottom: 5px; }
+  .p-card input { width:100%; background:transparent; border:none; color:var(--grey9); font-size:24px; font-weight:bold; outline:none; }
+
+  .checklist-box { background: var(--grey2); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+  .check-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+  .check-item:last-child { border: none; }
+  .check-left { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .check-left input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--red); cursor: pointer; }
+  .check-left.completado span { text-decoration: line-through; color: var(--grey6); }
+
+  /* Utilidades Comunes UI */
+  .btn-icon-action { background: none; border: none; color: var(--grey7); cursor: pointer; display: flex; align-items: center; }
+  .btn-icon-action:hover { color: var(--grey9); }
+  .input-flat { background: var(--grey3); border: 1px solid var(--border); color: var(--grey9); padding: 6px 10px; border-radius: 6px; font-size: 13px; }
+  
+  .menu-movil-trigger { display: none; background: none; border: none; color: var(--grey9); cursor: pointer; margin-right: 15px; }
+
+  /* Vista de pantalla vacía */
+  #empty-view { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color: var(--grey6); gap:10px; }
+
+  /* MÓVIL DIRECTO */
+  @media (max-width: 768px) {
+    .menu-movil-trigger { display: block; }
+    .sidebar { position: absolute; left: 0; top: 0; bottom: 0; transform: translateX(-100%); background: var(--grey2); }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 5; display: none; }
+    .sidebar-overlay.open { display: block; }
+  }
+
+  @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+
+  <div id="auth-overlay">
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px;">Mi Diario de Viajes</h2>
+    <p style="color: var(--grey7)">Sincronización en la nube con Google Drive activada</p>
+    <button class="btn-auth" id="btn-login" onclick="handleAuthClick()">
+        <span class="material-icons-round">cloud_sync</span> Conectar con Google Drive
+    </button>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebarMovil()"></div>
+
+  <div id="app-container">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1>Bitácora</h1>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-icon-action" onclick="toggleTema()" title="Cambiar Tema"><span class="material-icons-round">dark_mode</span></button>
+          <button class="btn-icon-action" onclick="addTemporada()" title="Añadir Bloque Anual/Temporada"><span class="material-icons-round">create_new_folder</span></button>
+        </div>
+      </div>
+      <div class="lista-scroll" id="tree-container">
+        </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-bar">
+        <div style="display: flex; align-items: center;">
+          <button class="menu-movil-trigger" onclick="toggleSidebarMovil()"><span class="material-icons-round">menu</span></button>
+          <h2 id="destino-header-title" style="font-family: 'Playfair Display', serif; font-size: 20px;">Selecciona un destino</h2>
+        </div>
+        <div class="status-hub">
+            <div class="status-dot sync" id="sync-dot"></div>
+            <span id="sync-text">Cargando...</span>
+        </div>
+      </header>
+
+      <div id="empty-view">
+        <span class="material-icons-round" style="font-size: 48px;">map</span>
+        <p>Elige o crea un destino en el panel izquierdo para planificar tu ruta</p>
+      </div>
+
+      <div class="work-area" id="work-area">
+        <nav class="tabs-nav">
+          <button class="tab-btn activo" onclick="switchTab('diario')">Diario de Ruta</button>
+          <button class="tab-btn" onclick="switchTab('gastos')">Presupuesto</button>
+          <button class="tab-btn" onclick="switchTab('equipaje')">Listas de Control</button>
+        </nav>
+
+        <div class="tab-pane activo" id="pane-diario">
+          <textarea class="editor-textarea" id="txt-diario" oninput="autoSaveDataTrigger()" placeholder="Escribe aquí tu itinerario, hoteles, diarios de ruta o planes del viaje..."></textarea>
+        </div>
+
+        <div class="tab-pane" id="pane-gastos">
+          <div class="presupuesto-grid">
+            <div class="p-card"><h4>Vuelos / Transporte</h4><input type="number" id="g-transp" oninput="calcTotalGastos()" value="0"></div>
+            <div class="p-card"><h4>Alojamiento</h4><input type="number" id="g-aloj" oninput="calcTotalGastos()" value="0"></div>
+            <div class="p-card"><h4>Comida / Ocio</h4><input type="number" id="g-ocio" oninput="calcTotalGastos()" value="0"></div>
+            <div class="p-card" style="border-color:var(--red);"><h4>Presupuesto Total</h4><div id="g-total" style="font-size:24px; font-weight:bold; padding-top:4px; color:var(--red-bright)">0 €</div></div>
+          </div>
+        </div>
+
+        <div class="tab-pane" id="pane-equipaje">
+          <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <input type="text" id="new-item-name" class="form-control input-flat" style="flex:1;" placeholder="Añadir objeto o tarea pendiente...">
+            <button class="btn-auth" style="padding:4px 15px; font-size:12px; border-radius:6px;" onclick="addCheckItem()">Agregar</button>
+          </div>
+          <div class="checklist-box" id="checklist-container">
+            </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+  <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+  <script>
+    // CREDENCIALES COMPILADAS REUTILIZADAS DE TU PANEL DE CONTROL
+    const CLIENT_ID = '253413266265-6u3qd7u8crqcfl66ko76rc8gjtq96c7m.apps.googleusercontent.com';
+    const API_KEY = 'AIzaSyAiy0piQ2iZeCOjR75-D6CMr7QIq72Nbjw';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const FILE_NAME = 'config_viajes_app.json';
+
+    let gapiInited = false;
+    let gisInited = false;
+    let tokenClient;
+    let fileId = null;
+
+    // Estructura de Datos Unificada del JSON para almacenar en tu nube
+    let db = { temporadas: [] };
+    
+    let currentDestinoId = null;
+    let autoSaveTimeout = null;
+
+    function gapiLoaded() { gapi.load('client', initializeGapiClient); }
+    async function initializeGapiClient() {
+        await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
+        gapiInited = true;
+    }
+    function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID, scope: SCOPES,
+            callback: (resp) => {
+                if (resp.error !== undefined) throw (resp);
+                document.getElementById('auth-overlay').style.display = 'none';
+                startApp();
+            }
+        });
+        gisInited = true;
+    }
+
+    function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
+
+    async function startApp() {
+        try {
+            setSyncStatus('saving', 'Leyendo Bitácora en tu nube...');
+            const response = await gapi.client.drive.files.list({ q: `name = '${FILE_NAME}' and trashed = false`, fields: 'files(id, name)' });
+            const files = response.result.files;
+            
+            if (files.length > 0) {
+                fileId = files[0].id;
+                await loadDataFromDrive();
+            } else {
+                await createInitialDriveFile();
+            }
+            setSyncStatus('sync', 'Sincronizado');
+            renderTree();
+        } catch (err) {
+            console.error(err);
+            setSyncStatus('none', 'Error Cloud Sync');
+        }
+    }
+
+    async function loadDataFromDrive() {
+        const response = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
+        db = response.result;
+        if (!db || !db.temporadas) db = { temporadas: [] };
+    }
+
+    async function createInitialDriveFile() {
+        // Inicializador estructural limpio por defecto para no romper el mapa
+        db = {
+            temporadas: [
+                {
+                    id: "t1", nombre: "Europa Central", emoji: "🇪🇺",
+                    destinos: [
+                        { id: "d1", nombre: "Alsacia (Colmar/Estrasburgo)", emoji: "🎄", diario: "Planes para el viaje a Alsacia...", gastos: { transp: 0, aloj: 0, ocio: 0 }, items: [] }
+                    ]
+                }
+            ]
+        };
+        await saveDataToDrive();
+    }
+
+    async function saveDataToDrive() {
+        if (!fileId) {
+            const metadata = { name: FILE_NAME, mimeType: 'application/json' };
+            const resp = await gapi.client.drive.files.create({ resource: metadata, fields: 'id' });
+            fileId = resp.result.id;
+        }
+        
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(db)
+        });
+        setSyncStatus('sync', 'Sincronizado');
+    }
+
+    // Temporizador Debounce para no saturar a peticiones la API de Google mientras escribes
+    function autoSaveDataTrigger() {
+        setSyncStatus('saving', 'Cambios sin guardar...');
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(async () => {
+            syncFormToCurrentDestino();
+            await saveDataToDrive();
+        }, 1200); 
+    }
+
+    function setSyncStatus(type, text) {
+        const dot = document.getElementById('sync-dot');
+        const txt = document.getElementById('sync-text');
+        if(dot && txt) { dot.className = 'status-dot ' + type; txt.innerText = text; }
+    }
+
+    /* ══ MANIPULACIÓN DEL ÁRBOL UI ══ */
+    function renderTree() {
+        const container = document.getElementById('tree-container');
+        container.innerHTML = '';
+
+        db.temporadas.forEach(temp => {
+            const group = document.createElement('div');
+            group.className = 'temporada-item';
+
+            const header = document.createElement('div');
+            group.className = 'temp-title-row';
+            header.innerHTML = `
+                <span>${temp.emoji || '📅'} ${escapeHTML(temp.nombre)}</span>
+                <button class="btn-icon-action" onclick="addDestino('${temp.id}'); event.stopPropagation();"><span class="material-icons-round" style="font-size:16px;">add</span></button>
+            `;
+            group.appendChild(header);
+
+            const destList = document.createElement('div');
+            destList.style.padding = '0 5px';
+
+            if(temp.destinos) {
+                temp.destinos.forEach(dest => {
+                    const activeClass = currentDestinoId === dest.id ? 'activo' : '';
+                    const item = document.createElement('div');
+                    item.className = `destino-item ${activeClass}`;
+                    item.onclick = () => selectDestino(dest.id);
+                    item.innerHTML = `
+                        <span>${dest.emoji || '📍'} ${escapeHTML(dest.nombre)}</span>
+                        <button class="btn-icon-action" style="color:var(--grey6);" onclick="deleteDestino('${dest.id}'); event.stopPropagation();"><span class="material-icons-round" style="font-size:14px;">delete</span></button>
+                    `;
+                    destList.appendChild(item);
+                });
+            }
+
+            group.appendChild(destList);
+            container.appendChild(group);
+        });
+    }
+
+    function selectDestino(destId) {
+        // Antes de cambiar, guardar estado actual si lo hubiera
+        syncFormToCurrentDestino();
+
+        currentDestinoId = destId;
+        renderTree();
+
+        // Buscar el nodo plano de datos
+        let activo = null;
+        db.temporadas.forEach(t => {
+            if(t.destinos) { t.destinos.forEach(d => { if(d.id === destId) activo = d; }); }
+        });
+
+        if(!activo) return;
+
+        document.getElementById('empty-view').style.display = 'none';
+        document.getElementById('work-area').style.display = 'block';
+        document.getElementById('destino-header-title').innerText = `${activo.emoji || '📍'} ${activo.nombre}`;
+
+        // Mapear valores al formulario
+        document.getElementById('txt-diario').value = activo.diario || '';
+        document.getElementById('g-transp').value = activo.gastos?.transp || 0;
+        document.getElementById('g-aloj').value = activo.gastos?.aloj || 0;
+        document.getElementById('g-ocio').value = activo.gastos?.ocio || 0;
+
+        calcTotalGastos();
+        renderChecklist(activo.items || []);
+
+        if(window.innerWidth <= 768) toggleSidebarMovil();
+    }
+
+    function syncFormToCurrentDestino() {
+        if(!currentDestinoId) return;
+        db.temporadas.forEach(t => {
+            if(t.destinos) {
+                t.destinos.forEach(d => {
+                    if(d.id === currentDestinoId) {
+                        d.diario = document.getElementById('txt-diario').value;
+                        d.gastos = {
+                            transp: parseFloat(document.getElementById('g-transp').value) || 0,
+                            aloj: parseFloat(document.getElementById('g-aloj').value) || 0,
+                            ocio: parseFloat(document.getElementById('g-ocio').value) || 0
+                        };
+                    }
+                });
+            }
+        });
+    }
+
+    /* ══ INTERACCIONES CRUD DEL DIARIO ══ */
+    async function addTemporada() {
+        const name = prompt("Nombre de la temporada / año (Ej: Viajes 2026):");
+        if(!name) return;
+        db.temporadas.push({ id: 't_' + Date.now(), nombre: name, emoji: '📅', destinos: [] });
+        renderTree();
+        await saveDataToDrive();
+    }
+
+    async function addDestino(tempId) {
+        const name = prompt("Nombre del nuevo Destino:");
+        if(!name) return;
+        const emoji = prompt("Introduce un Emoji para el viaje (Ej: ✈️, 🌲, 🗺️):", "📍");
+        
+        db.temporadas.forEach(t => {
+            if(t.id === tempId) {
+                if(!t.destinos) t.destinos = [];
+                t.destinos.push({
+                    id: 'd_' + Date.now(), nombre: name, emoji: emoji || '📍',
+                    diario: '', gastos: { transp:0, aloj:0, ocio:0 }, items: []
+                });
+            }
+        });
+        renderTree();
+        await saveDataToDrive();
+    }
+
+    async function deleteDestino(destId) {
+        if(!confirm("¿Seguro que quieres eliminar este viaje? Se borrarán todos sus diarios y gastos.")) return;
+        db.temporadas.forEach(t => {
+            if(t.destinos) t.destinos = t.destinos.filter(d => d.id !== destId);
+        });
+        if(currentDestinoId === destId) {
+            currentDestinoId = null;
+            document.getElementById('work-area').style.display = 'none';
+            document.getElementById('empty-view').style.display = 'flex';
+            document.getElementById('destino-header-title').innerText = "Selecciona un destino";
+        }
+        renderTree();
+        await saveDataToDrive();
+    }
+
+    /* ══ CONTROLADORES PESTAÑAS Y CÁLCULOS ══ */
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('activo'));
+        
+        event.target.classList.add('activo');
+        document.getElementById('pane-' + tabName).classList.add('activo');
+    }
+
+    function calcTotalGastos() {
+        const t = parseFloat(document.getElementById('g-transp').value) || 0;
+        const a = parseFloat(document.getElementById('g-aloj').value) || 0;
+        const o = parseFloat(document.getElementById('g-ocio').value) || 0;
+        document.getElementById('g-total').innerText = (t + a + o).toLocaleString('es-ES') + ' €';
+        autoSaveDataTrigger();
+    }
+
+    /* ══ SECCIÓN CHECKLISTS ══ */
+    function renderChecklist(items) {
+        const container = document.getElementById('checklist-container');
+        container.innerHTML = '';
+        if(items.length === 0) {
+            container.innerHTML = '<p style="color:var(--grey6); font-size:13px; text-align:center; padding:10px 0;">No hay elementos en la lista.</p>';
+            return;
+        }
+
+        items.forEach((item, index) => {
+            const row = document.createElement('div');
+            row.className = 'check-item';
+            const checkClass = item.checked ? 'check-left completado' : 'check-left';
+            row.innerHTML = `
+                <div class="${checkClass}">
+                    <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleCheckItem(${index})">
+                    <span>${escapeHTML(item.nombre)}</span>
+                </div>
+                <button class="btn-icon-action" style="color:var(--grey6)" onclick="deleteCheckItem(${index})"><span class="material-icons-round" style="font-size:16px;">delete</span></button>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function addCheckItem() {
+        const input = document.getElementById('new-item-name');
+        const text = input.value.trim();
+        if(!text || !currentDestinoId) return;
+
+        db.temporadas.forEach(t => {
+            if(t.destinos) {
+                t.destinos.forEach(d => {
+                    if(d.id === currentDestinoId) {
+                        if(!d.items) d.items = [];
+                        d.items.push({ nombre: text, checked: false });
+                        renderChecklist(d.items);
+                    }
+                });
+            }
+        });
+        input.value = '';
+        autoSaveDataTrigger();
+    }
+
+    function toggleCheckItem(index) {
+        db.temporadas.forEach(t => {
+            if(t.destinos) {
+                t.destinos.forEach(d => {
+                    if(d.id === currentDestinoId) {
+                        d.items[index].checked = !d.items[index].checked;
+                        renderChecklist(d.items);
+                    }
+                });
+            }
+        });
+        autoSaveDataTrigger();
+    }
+
+    function deleteCheckItem(index) {
+        db.temporadas.forEach(t => {
+            if(t.destinos) {
+                t.destinos.forEach(d => {
+                    if(d.id === currentDestinoId) {
+                        d.items.splice(index, 1);
+                        renderChecklist(d.items);
+                    }
+                });
+            }
+        });
+        autoSaveDataTrigger();
+    }
+
+    /* ══ UTILIDADES EXTRAS ══ */
+    function toggleTema() {
+        document.documentElement.classList.toggle('tema-claro');
+    }
+
+    function toggleSidebarMovil() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('open');
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+  </script>
+</body>
+</html>
