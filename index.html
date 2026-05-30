@@ -3,11 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Mi Diario de Viajes · Drive Sync</title>
+<title>Mi Diario de Viajes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2=family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   /* ══ PALETA OSCURA (default) ══ */
   :root {
@@ -16,218 +14,316 @@
     --grey4: #2a2a2a; --grey5: #3a3a3a; --grey6: #555;
     --grey7: #888; --grey8: #bbb; --grey9: #e8e8e8;
     --border: #2e2e2e; --shadow: rgba(0,0,0,0.45);
-    --bg-main: var(--grey1);
-    --accent: var(--red);
   }
 
   /* ══ PALETA CLARA ══ */
   html.tema-claro {
-    --red: #c0622a; --red-bright: #f47b35;
-    --grey1: #fcfcfc; --grey2: #f3f3f3; --grey3: #e8e8e8;
-    --grey4: #dadada; --grey5: #b5b5b5; --grey6: #888;
-    --grey7: #666;   --grey8: #333;   --grey9: #111;
-    --border: #d4d4d4; --shadow: rgba(0,0,0,0.08);
-    --bg-main: var(--grey1);
-    --accent: var(--red);
+    --red: #c0622a; --red-bright: #e8874a;
+    --grey1: #f5ede0; --grey2: #1a1410; --grey3: #fffcf8;
+    --grey4: #e8d9c4; --grey5: #d0bfa8; --grey6: #8a7060;
+    --grey7: #4a3f35; --grey8: #2a1f18; --grey9: #1a1410;
+    --border: #e0ccb4; --shadow: rgba(26,20,16,0.12);
   }
 
-  /* Capa de Autenticación con Google */
-  #auth-overlay {
-    position: fixed;
-    inset: 0;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
     background: var(--grey1);
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
+    font-family: 'DM Sans', sans-serif;
     color: var(--grey9);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+  html:not(.tema-claro) body {
+    background-image:
+      radial-gradient(circle at 15% 40%, rgba(192,33,42,0.07) 0%, transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(192,33,42,0.03) 0%, transparent 35%);
+  }
+  html.tema-claro body {
+    background-image:
+      radial-gradient(circle at 20% 50%, rgba(192,98,42,0.06) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(58,107,138,0.05) 0%, transparent 40%);
   }
 
-  .btn-auth {
-    background: var(--red);
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: background 0.2s;
-  }
-  .btn-auth:hover { background: var(--red-bright); }
+  /* ══ VISTAS ══ */
+  .vista { display: none; }
+  .vista.activa { display: block; }
 
-  /* Indicador Hub Estado Sincronización */
+  /* ══ HEADER ══ */
+  header {
+    padding: 16px 20px 13px;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  html:not(.tema-claro) header { background: var(--grey2); }
+  html.tema-claro        header { background: #1a1410; border-bottom-color: #2a1f18; }
+
+  .btn-back {
+    background: none; border: none; font-size: 22px;
+    cursor: pointer; padding: 0 4px; line-height: 1;
+    display: none; flex-shrink: 0;
+  }
+  html:not(.tema-claro) .btn-back { color: var(--grey8); }
+  html.tema-claro        .btn-back { color: #e8d9c4; }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(16px, 4vw, 21px);
+    font-weight: 700; flex: 1;
+    min-width: 0; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+    transition: color 0.3s;
+  }
+  html:not(.tema-claro) header h1 { color: var(--grey9); }
+  html.tema-claro        header h1 { color: #f5ede0; }
+  header h1 span { color: var(--red-bright); font-style: italic; }
+
+  .breadcrumb {
+    font-size: 11px; color: var(--grey7);
+    letter-spacing: 0.3px; margin-top: 1px;
+    display: none;
+  }
+  .breadcrumb span { color: var(--red-bright); }
+  .header-title-wrap { flex: 1; min-width: 0; overflow: hidden; }
+  .header-title-wrap h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* Hub de Estado de Sincronización */
   .status-hub {
-    font-size: 13px;
-    color: var(--grey7);
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    font-size: 11px; color: var(--grey7);
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 50px;
+    border: 1px solid var(--border);
   }
-  .status-dot {
-    width: 8px; height: 8px;
-    background: var(--grey6);
-    border-radius: 50%;
-  }
+  html.tema-claro .status-hub { background: rgba(255,255,255,0.15); color: #e8d9c4; border-color: #4a3f35; }
+  .status-dot { width: 7px; height: 7px; background: var(--grey6); border-radius: 50%; }
   .status-dot.sync { background: #00b37e; }
   .status-dot.saving { background: #e1b12c; animation: pulse 1s infinite; }
 
-  /* Estilos Base del Layout original heredado */
-  * { box-sizing: border-box; margin:0; padding:0; font-family: 'DM Sans', sans-serif; }
-  body { background: var(--grey1); color: var(--grey9); display: flex; height: 100vh; overflow: hidden; }
-
-  /* REUTILIZACIÓN DE TUS ESTILOS ORIGINALES PRINCIPALES (Resumidos para optimizar espacio) */
-  #app-container { display: flex; width: 100vw; height: 100vh; position: relative; }
-  
-  /* Sidebar Lateral */
-  .sidebar { width: 320px; background: var(--grey2); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; transition: transform 0.3s ease; }
-  .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .sidebar-header h1 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--red-bright); }
-  
-  .lista-scroll { flex:1; overflow-y: auto; padding: 15px; }
-  .temporada-item { margin-bottom: 15px; background: var(--grey3); border-radius: 8px; padding: 4px; }
-  .temp-title-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; font-weight: bold; font-size: 14px; color: var(--grey7); cursor:pointer;}
-  .destino-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; margin: 4px 0; border-radius: 6px; cursor: pointer; color: var(--grey8); font-size: 14px; }
-  .destino-item:hover, .destino-item.activo { background: var(--grey4); color: var(--grey9); }
-  .destino-item.activo { border-left: 3px solid var(--red); }
-
-  /* Contenido principal */
-  .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--grey1); }
-  .top-bar { height: 65px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: var(--grey2); }
-  .work-area { flex: 1; overflow-y: auto; padding: 25px; display: none; }
-  
-  /* Pestañas internas */
-  .tabs-nav { display: flex; gap: 5px; border-bottom: 1px solid var(--border); margin-bottom: 20px; padding-bottom: 1px; }
-  .tab-btn { padding: 10px 20px; background: none; border: none; color: var(--grey7); cursor: pointer; font-weight: 500; font-size: 14px; position: relative; }
-  .tab-btn.activo { color: var(--red-bright); font-weight: 700; }
-  .tab-btn.activo::after { content:''; position: absolute; bottom: -2px; left:0; right:0; height: 3px; background: var(--red-bright); border-radius: 2px; }
-  
-  .tab-pane { display: none; }
-  .tab-pane.activo { display: block; }
-
-  /* Bloques de Diarios, Notas y Checklists heredados */
-  .editor-textarea { width: 100%; height: 450px; background: var(--grey2); color: var(--grey9); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-size: 15px; line-height: 1.6; resize: none; outline: none; }
-  .editor-textarea:focus { border-color: var(--red); }
-  
-  .presupuesto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 25px; }
-  .p-card { background: var(--grey2); border:1px solid var(--border); border-radius: 10px; padding: 15px; }
-  .p-card h4 { font-size:12px; text-transform: uppercase; color:var(--grey7); margin-bottom: 5px; }
-  .p-card input { width:100%; background:transparent; border:none; color:var(--grey9); font-size:24px; font-weight:bold; outline:none; }
-
-  .checklist-box { background: var(--grey2); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-  .check-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); }
-  .check-item:last-child { border: none; }
-  .check-left { display: flex; align-items: center; gap: 10px; font-size: 14px; }
-  .check-left input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--red); cursor: pointer; }
-  .check-left.completado span { text-decoration: line-through; color: var(--grey6); }
-
-  /* Utilidades Comunes UI */
-  .btn-icon-action { background: none; border: none; color: var(--grey7); cursor: pointer; display: flex; align-items: center; }
-  .btn-icon-action:hover { color: var(--grey9); }
-  .input-flat { background: var(--grey3); border: 1px solid var(--border); color: var(--grey9); padding: 6px 10px; border-radius: 6px; font-size: 13px; }
-  
-  .menu-movil-trigger { display: none; background: none; border: none; color: var(--grey9); cursor: pointer; margin-right: 15px; }
-
-  /* Vista de pantalla vacía */
-  #empty-view { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color: var(--grey6); gap:10px; }
-
-  /* MÓVIL DIRECTO */
-  @media (max-width: 768px) {
-    .menu-movil-trigger { display: block; }
-    .sidebar { position: absolute; left: 0; top: 0; bottom: 0; transform: translateX(-100%); background: var(--grey2); }
-    .sidebar.open { transform: translateX(0); }
-    .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 5; display: none; }
-    .sidebar-overlay.open { display: block; }
+  /* Capa de Autenticación */
+  #auth-overlay {
+    position: fixed; inset: 0; background: var(--grey1); z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
   }
+  .btn-auth {
+    background: var(--red); color: white; border: none; padding: 13px 24px;
+    border-radius: 50px; font-size: 15px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; transition: background 0.2s;
+  }
+  .btn-auth:hover { background: var(--red-bright); }
 
+  /* Resto de tus estilos originales intactos */
+  .btn-add {
+    background: var(--red); color: white; border: none;
+    border-radius: 50px; padding: 9px 15px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
+    transition: background 0.2s, transform 0.1s; white-space: nowrap;
+  }
+  .btn-add:active { transform: scale(0.96); }
+  .btn-add:hover  { background: var(--red-bright); }
+
+  .btn-menu {
+    border: none; font-size: 20px;
+    width: 36px; height: 36px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s; flex-shrink: 0;
+  }
+  html:not(.tema-claro) .btn-menu { background: var(--grey4); color: var(--grey8); }
+  html.tema-claro        .btn-menu { background: rgba(255,255,255,0.12); color: #e8d9c4; }
+  
+  .menu-wrapper { position: relative; }
+  .dropdown {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    border-radius: 14px; min-width: 200px; overflow: hidden; z-index: 300;
+    border: 1px solid var(--grey5); box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  html:not(.tema-claro) .dropdown { background: var(--grey3); }
+  html.tema-claro        .dropdown { background: #fdf8f2; border-color: #d0bfa8; }
+  .dropdown.open { display: block; }
+  .dropdown-item {
+    display: flex; align-items: center; gap: 10px; padding: 13px 16px; font-size: 14px;
+    cursor: pointer; border: none; background: none; width: 100%; text-align: left; color: var(--grey9);
+  }
+  html:not(.tema-claro) .dropdown-item:hover { background: var(--grey4); }
+  html.tema-claro        .dropdown-item:hover { background: #f0e4d0; }
+
+  .stats { display: flex; gap: 10px; padding: 14px 16px 6px; overflow-x: auto; scrollbar-width: none; }
+  .stat-card { border-radius: 12px; padding: 10px 16px; min-width: 90px; text-align: center; flex-shrink: 0; border: 1px solid var(--border); box-shadow: 0 2px 8px var(--shadow); }
+  html:not(.tema-claro) .stat-card { background: var(--grey3); }
+  html.tema-claro        .stat-card { background: #fffcf8; border-color: #e8d9c4; }
+  .stat-card .num { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--red-bright); }
+  .stat-card .label { font-size: 10px; color: var(--grey7); margin-top: 3px; text-transform: uppercase; }
+
+  .filters { padding: 11px 16px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+  html:not(.tema-claro) .filters { background: var(--grey2); }
+  html.tema-claro        .filters { background: #e8d9c4; }
+  .filter-chip { border: 1.5px solid var(--grey5); background: transparent; color: var(--grey7); border-radius: 50px; padding: 6px 14px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .filter-chip.active { background: var(--red); color: white; border-color: var(--red); }
+
+  .temporadas-grid { padding: 14px 16px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .temp-card { border-radius: 20px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 16px var(--shadow); cursor: pointer; position: relative; overflow: hidden; }
+  html:not(.tema-claro) .temp-card { background: var(--grey3); }
+  html.tema-claro        .temp-card { background: #fffcf8; border-color: #e8d9c4; }
+  .temp-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--red); }
+  .temp-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .temp-emoji { font-size: 32px; line-height: 1; }
+  .temp-nombre { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; color: var(--grey9); }
+  .temp-del-btn { background: none; border: none; font-size: 14px; cursor: pointer; opacity: 0; padding: 4px; }
+  .temp-card:hover .temp-del-btn { opacity: 0.4; }
+  .temp-del-btn:hover { opacity: 1 !important; background: rgba(192,33,42,0.15); }
+
+  .destinos-grid { padding: 12px 16px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+  .dest-card { border-radius: 18px; padding: 18px 14px 14px; border: 1px solid var(--border); box-shadow: 0 3px 16px var(--shadow); cursor: pointer; position: relative; text-align: center; border-top: 3px solid var(--red); }
+  html:not(.tema-claro) .dest-card { background: var(--grey3); }
+  html.tema-claro        .dest-card { background: #fffcf8; border-color: #e8d9c4; }
+  .dest-emoji { font-size: 34px; display: block; margin-bottom: 9px; }
+  .dest-nombre { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; color: var(--grey9); }
+
+  .items-grid { padding: 12px 16px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+  .card { border-radius: 16px; padding: 18px; box-shadow: 0 3px 12px var(--shadow); position: relative; border: 1px solid var(--border); border-left: 4px solid var(--red); }
+  html:not(.tema-claro) .card { background: var(--grey3); }
+  html.tema-claro        .card { background: #fffcf8; border-color: #e8d9c4; }
+  .card[data-tipo="vuelo"]      { border-left-color: #5588aa; }
+  .card[data-tipo="hotel"]      { border-left-color: #557755; }
+  .card[data-tipo="actividad"]  { border-left-color: #8855aa; }
+  .card[data-tipo="transporte"] { border-left-color: #aa8833; }
+  .card[data-tipo="general"]    { border-left-color: var(--red); }
+
+  /* Formularios Flotantes / Modales de tu UI original */
+  .fab-add { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--red); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 200; }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 500; align-items: center; justify-content: center; padding: 16px; }
+  .modal.open { display: flex; }
+  .modal-content { background: var(--grey2); border: 1px solid var(--border); border-radius: 24px; padding: 24px; width: 100%; max-width: 400px; }
+  html.tema-claro .modal-content { background: #fffcf8; border-color: #e0ccb4; }
+  
   @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 </style>
 </head>
 <body>
 
   <div id="auth-overlay">
-    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px;">Mi Diario de Viajes</h2>
-    <p style="color: var(--grey7)">Sincronización en la nube con Google Drive activada</p>
+    <h2 style="font-family: 'Playfair Display', serif; font-size: 26px; color: var(--red-bright);">Mi Diario de Viajes</h2>
+    <p style="color: var(--grey7); font-size: 14px;">Conectando de forma segura con tu Google Drive...</p>
     <button class="btn-auth" id="btn-login" onclick="handleAuthClick()">
-        <span class="material-icons-round">cloud_sync</span> Conectar con Google Drive
+        🔑 Conectar con Google Drive
     </button>
   </div>
 
-  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebarMovil()"></div>
-
-  <div id="app-container">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <h1>Bitácora</h1>
-        <div style="display:flex; gap:10px;">
-          <button class="btn-icon-action" onclick="toggleTema()" title="Cambiar Tema"><span class="material-icons-round">dark_mode</span></button>
-          <button class="btn-icon-action" onclick="addTemporada()" title="Añadir Bloque Anual/Temporada"><span class="material-icons-round">create_new_folder</span></button>
-        </div>
+  <div id="vista-temporadas" class="vista activa">
+    <header>
+      <div class="header-title-wrap">
+        <h1>Bitácora <span>de Viajes</span></h1>
       </div>
-      <div class="lista-scroll" id="tree-container">
-        </div>
-    </aside>
-
-    <main class="main-content">
-      <header class="top-bar">
-        <div style="display: flex; align-items: center;">
-          <button class="menu-movil-trigger" onclick="toggleSidebarMovil()"><span class="material-icons-round">menu</span></button>
-          <h2 id="destino-header-title" style="font-family: 'Playfair Display', serif; font-size: 20px;">Selecciona un destino</h2>
-        </div>
+      <div class="header-actions">
         <div class="status-hub">
-            <div class="status-dot sync" id="sync-dot"></div>
-            <span id="sync-text">Cargando...</span>
+          <div class="status-dot" id="sync-dot-1"></div>
+          <span id="sync-text-1">Drive</span>
         </div>
-      </header>
-
-      <div id="empty-view">
-        <span class="material-icons-round" style="font-size: 48px;">map</span>
-        <p>Elige o crea un destino en el panel izquierdo para planificar tu ruta</p>
+        <button class="btn-add" onclick="abrirModalTemp()">➕ Añadir</button>
+        <button class="btn-menu" onclick="toggleTema()">🌓</button>
       </div>
+    </header>
 
-      <div class="work-area" id="work-area">
-        <nav class="tabs-nav">
-          <button class="tab-btn activo" onclick="switchTab('diario')">Diario de Ruta</button>
-          <button class="tab-btn" onclick="switchTab('gastos')">Presupuesto</button>
-          <button class="tab-btn" onclick="switchTab('equipaje')">Listas de Control</button>
-        </nav>
+    <div class="stats">
+      <div class="stat-card"><div class="num" id="stat-tot-viajes">0</div><div class="label">Viajes</div></div>
+      <div class="stat-card"><div class="num" id="stat-tot-precio">0€</div><div class="label">Inversión</div></div>
+      <div class="stat-card"><div class="num" id="stat-tot-items">0</div><div class="label">Reservas</div></div>
+    </div>
 
-        <div class="tab-pane activo" id="pane-diario">
-          <textarea class="editor-textarea" id="txt-diario" oninput="autoSaveDataTrigger()" placeholder="Escribe aquí tu itinerario, hoteles, diarios de ruta o planes del viaje..."></textarea>
-        </div>
+    <div class="temporadas-grid" id="lista-temporadas"></div>
+  </div>
 
-        <div class="tab-pane" id="pane-gastos">
-          <div class="presupuesto-grid">
-            <div class="p-card"><h4>Vuelos / Transporte</h4><input type="number" id="g-transp" oninput="calcTotalGastos()" value="0"></div>
-            <div class="p-card"><h4>Alojamiento</h4><input type="number" id="g-aloj" oninput="calcTotalGastos()" value="0"></div>
-            <div class="p-card"><h4>Comida / Ocio</h4><input type="number" id="g-ocio" oninput="calcTotalGastos()" value="0"></div>
-            <div class="p-card" style="border-color:var(--red);"><h4>Presupuesto Total</h4><div id="g-total" style="font-size:24px; font-weight:bold; padding-top:4px; color:var(--red-bright)">0 €</div></div>
-          </div>
-        </div>
-
-        <div class="tab-pane" id="pane-equipaje">
-          <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <input type="text" id="new-item-name" class="form-control input-flat" style="flex:1;" placeholder="Añadir objeto o tarea pendiente...">
-            <button class="btn-auth" style="padding:4px 15px; font-size:12px; border-radius:6px;" onclick="addCheckItem()">Agregar</button>
-          </div>
-          <div class="checklist-box" id="checklist-container">
-            </div>
-        </div>
-
+  <div id="vista-destinos" class="vista">
+    <header>
+      <button class="btn-back" onclick="irATemporadas()">←</button>
+      <div class="header-title-wrap">
+        <h1 id="titulo-vista-destinos">Destinos</h1>
+        <div class="breadcrumb" id="bread-destinos">Temporada: <span>N/A</span></div>
       </div>
-    </main>
+      <div class="header-actions">
+        <div class="status-hub">
+          <div class="status-dot" id="sync-dot-2"></div>
+          <span id="sync-text-2">Drive</span>
+        </div>
+        <button class="btn-add" onclick="abrirModalDestino()">➕ Destino</button>
+      </div>
+    </header>
+    <div class="destinos-grid" id="lista-destinos"></div>
+  </div>
+
+  <div id="vista-items" class="vista">
+    <header>
+      <button class="btn-back" onclick="irADestinos()">←</button>
+      <div class="header-title-wrap">
+        <h1 id="titulo-vista-items">Reservas</h1>
+        <div class="breadcrumb" id="bread-items">Destino: <span>N/A</span></div>
+      </div>
+      <div class="header-actions">
+        <div class="status-hub">
+          <div class="status-dot" id="sync-dot-3"></div>
+          <span id="sync-text-3">Drive</span>
+        </div>
+        <button class="btn-add" onclick="abrirModalItem()">➕ Reserva</button>
+      </div>
+    </header>
+
+    <div class="filters">
+      <button class="filter-chip active" onclick="filtrarTipo('todos')">Todos</button>
+      <button class="filter-chip" onclick="filtrarTipo('vuelo')">✈️ Vuelos</button>
+      <button class="filter-chip" onclick="filtrarTipo('hotel')">🏨 Hoteles</button>
+      <button class="filter-chip" onclick="filtrarTipo('actividad')">🎟️ Planes</button>
+      <button class="filter-chip" onclick="filtrarTipo('transporte')">🚗 Rutas</button>
+    </div>
+
+    <div class="items-grid" id="lista-items"></div>
+  </div>
+
+  <div id="modal-temp" class="modal">
+    <div class="modal-content">
+      <h3 style="font-family:'Playfair Display'; margin-bottom:15px;">Nueva Temporada</h3>
+      <input type="text" id="in-temp-nombre" placeholder="Año o Bloque (Ej: 2026)" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
+      <input type="text" id="in-temp-emoji" placeholder="Emoji (Ej: 🗺️)" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
+      <button class="btn-add" style="width:100%; justify-content:center;" onclick="crearTemporada()">Crear Bloque</button>
+      <button class="btn-add" style="width:100%; justify-content:center; background:none; color:var(--grey7); margin-top:5px;" onclick="cerrarModales()">Cancelar</button>
+    </div>
+  </div>
+
+  <div id="modal-dest" class="modal">
+    <div class="modal-content">
+      <h3 style="font-family:'Playfair Display'; margin-bottom:15px;">Nuevo Destino</h3>
+      <input type="text" id="in-dest-nombre" placeholder="Ciudad o Región (Ej: Alsacia)" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
+      <input type="text" id="in-dest-emoji" placeholder="Emoji (Ej: 🎄)" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
+      <button class="btn-add" style="width:100%; justify-content:center;" onclick="crearDestino()">Crear Destino</button>
+      <button class="btn-add" style="width:100%; justify-content:center; background:none; color:var(--grey7); margin-top:5px;" onclick="cerrarModales()">Cancelar</button>
+    </div>
+  </div>
+
+  <div id="modal-item" class="modal">
+    <div class="modal-content">
+      <h3 style="font-family:'Playfair Display'; margin-bottom:15px;">Añadir Reserva</h3>
+      <select id="in-item-tipo" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
+        <option value="general">💼 General</option>
+        <option value="vuelo">✈️ Vuelo</option>
+        <option value="hotel">🏨 Alojamiento</option>
+        <option value="actividad">🎟️ Actividad / Plan</option>
+        <option value="transporte">🚗 Ruta / Transporte</option>
+      </select>
+      <input type="text" id="in-item-titulo" placeholder="Título o Concepto" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
+      <input type="number" id="in-item-precio" placeholder="Precio (€)" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9);">
+      <textarea id="in-item-notas" placeholder="Anotaciones, localizadores, enlaces..." rows="3" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid var(--border); background:var(--grey3); color:var(--grey9); resize:none;"></textarea>
+      <button class="btn-add" style="width:100%; justify-content:center;" onclick="crearItem()">Guardar Reserva</button>
+      <button class="btn-add" style="width:100%; justify-content:center; background:none; color:var(--grey7); margin-top:5px;" onclick="cerrarModales()">Cancelar</button>
+    </div>
   </div>
 
   <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
   <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 
   <script>
-    // CREDENCIALES COMPILADAS REUTILIZADAS DE TU PANEL DE CONTROL
     const CLIENT_ID = '253413266265-6u3qd7u8crqcfl66ko76rc8gjtq96c7m.apps.googleusercontent.com';
     const API_KEY = 'AIzaSyAiy0piQ2iZeCOjR75-D6CMr7QIq72Nbjw';
     const SCOPES = 'https://www.googleapis.com/auth/drive.file';
@@ -238,12 +334,18 @@
     let tokenClient;
     let fileId = null;
 
-    // Estructura de Datos Unificada del JSON para almacenar en tu nube
-    let db = { temporadas: [] };
-    
-    let currentDestinoId = null;
-    let autoSaveTimeout = null;
+    // Estado unificado original que se persistirá en la nube
+    let db = {
+      temporadas: [],
+      destinos: [],
+      items: []
+    };
 
+    let idTempActiva = null;
+    let idDestActivo = null;
+    let filtroTipoActivo = 'todos';
+
+    /* ══ CONTROLADORES APIS GOOGLE ══ */
     function gapiLoaded() { gapi.load('client', initializeGapiClient); }
     async function initializeGapiClient() {
         await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
@@ -265,7 +367,7 @@
 
     async function startApp() {
         try {
-            setSyncStatus('saving', 'Leyendo Bitácora en tu nube...');
+            setSyncStatus('saving', 'Conectando...');
             const response = await gapi.client.drive.files.list({ q: `name = '${FILE_NAME}' and trashed = false`, fields: 'files(id, name)' });
             const files = response.result.files;
             
@@ -276,300 +378,23 @@
                 await createInitialDriveFile();
             }
             setSyncStatus('sync', 'Sincronizado');
-            renderTree();
+            renderTodo();
         } catch (err) {
             console.error(err);
-            setSyncStatus('none', 'Error Cloud Sync');
+            setSyncStatus('none', 'Error Cloud');
         }
     }
 
     async function loadDataFromDrive() {
         const response = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
         db = response.result;
-        if (!db || !db.temporadas) db = { temporadas: [] };
+        if (!db.temporadas) db.temporadas = [];
+        if (!db.destinos) db.destinos = [];
+        if (!db.items) db.items = [];
     }
 
     async function createInitialDriveFile() {
-        // Inicializador estructural limpio por defecto para no romper el mapa
         db = {
-            temporadas: [
-                {
-                    id: "t1", nombre: "Europa Central", emoji: "🇪🇺",
-                    destinos: [
-                        { id: "d1", nombre: "Alsacia (Colmar/Estrasburgo)", emoji: "🎄", diario: "Planes para el viaje a Alsacia...", gastos: { transp: 0, aloj: 0, ocio: 0 }, items: [] }
-                    ]
-                }
-            ]
-        };
-        await saveDataToDrive();
-    }
-
-    async function saveDataToDrive() {
-        if (!fileId) {
-            const metadata = { name: FILE_NAME, mimeType: 'application/json' };
-            const resp = await gapi.client.drive.files.create({ resource: metadata, fields: 'id' });
-            fileId = resp.result.id;
-        }
-        
-        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(db)
-        });
-        setSyncStatus('sync', 'Sincronizado');
-    }
-
-    // Temporizador Debounce para no saturar a peticiones la API de Google mientras escribes
-    function autoSaveDataTrigger() {
-        setSyncStatus('saving', 'Cambios sin guardar...');
-        clearTimeout(autoSaveTimeout);
-        autoSaveTimeout = setTimeout(async () => {
-            syncFormToCurrentDestino();
-            await saveDataToDrive();
-        }, 1200); 
-    }
-
-    function setSyncStatus(type, text) {
-        const dot = document.getElementById('sync-dot');
-        const txt = document.getElementById('sync-text');
-        if(dot && txt) { dot.className = 'status-dot ' + type; txt.innerText = text; }
-    }
-
-    /* ══ MANIPULACIÓN DEL ÁRBOL UI ══ */
-    function renderTree() {
-        const container = document.getElementById('tree-container');
-        container.innerHTML = '';
-
-        db.temporadas.forEach(temp => {
-            const group = document.createElement('div');
-            group.className = 'temporada-item';
-
-            const header = document.createElement('div');
-            group.className = 'temp-title-row';
-            header.innerHTML = `
-                <span>${temp.emoji || '📅'} ${escapeHTML(temp.nombre)}</span>
-                <button class="btn-icon-action" onclick="addDestino('${temp.id}'); event.stopPropagation();"><span class="material-icons-round" style="font-size:16px;">add</span></button>
-            `;
-            group.appendChild(header);
-
-            const destList = document.createElement('div');
-            destList.style.padding = '0 5px';
-
-            if(temp.destinos) {
-                temp.destinos.forEach(dest => {
-                    const activeClass = currentDestinoId === dest.id ? 'activo' : '';
-                    const item = document.createElement('div');
-                    item.className = `destino-item ${activeClass}`;
-                    item.onclick = () => selectDestino(dest.id);
-                    item.innerHTML = `
-                        <span>${dest.emoji || '📍'} ${escapeHTML(dest.nombre)}</span>
-                        <button class="btn-icon-action" style="color:var(--grey6);" onclick="deleteDestino('${dest.id}'); event.stopPropagation();"><span class="material-icons-round" style="font-size:14px;">delete</span></button>
-                    `;
-                    destList.appendChild(item);
-                });
-            }
-
-            group.appendChild(destList);
-            container.appendChild(group);
-        });
-    }
-
-    function selectDestino(destId) {
-        // Antes de cambiar, guardar estado actual si lo hubiera
-        syncFormToCurrentDestino();
-
-        currentDestinoId = destId;
-        renderTree();
-
-        // Buscar el nodo plano de datos
-        let activo = null;
-        db.temporadas.forEach(t => {
-            if(t.destinos) { t.destinos.forEach(d => { if(d.id === destId) activo = d; }); }
-        });
-
-        if(!activo) return;
-
-        document.getElementById('empty-view').style.display = 'none';
-        document.getElementById('work-area').style.display = 'block';
-        document.getElementById('destino-header-title').innerText = `${activo.emoji || '📍'} ${activo.nombre}`;
-
-        // Mapear valores al formulario
-        document.getElementById('txt-diario').value = activo.diario || '';
-        document.getElementById('g-transp').value = activo.gastos?.transp || 0;
-        document.getElementById('g-aloj').value = activo.gastos?.aloj || 0;
-        document.getElementById('g-ocio').value = activo.gastos?.ocio || 0;
-
-        calcTotalGastos();
-        renderChecklist(activo.items || []);
-
-        if(window.innerWidth <= 768) toggleSidebarMovil();
-    }
-
-    function syncFormToCurrentDestino() {
-        if(!currentDestinoId) return;
-        db.temporadas.forEach(t => {
-            if(t.destinos) {
-                t.destinos.forEach(d => {
-                    if(d.id === currentDestinoId) {
-                        d.diario = document.getElementById('txt-diario').value;
-                        d.gastos = {
-                            transp: parseFloat(document.getElementById('g-transp').value) || 0,
-                            aloj: parseFloat(document.getElementById('g-aloj').value) || 0,
-                            ocio: parseFloat(document.getElementById('g-ocio').value) || 0
-                        };
-                    }
-                });
-            }
-        });
-    }
-
-    /* ══ INTERACCIONES CRUD DEL DIARIO ══ */
-    async function addTemporada() {
-        const name = prompt("Nombre de la temporada / año (Ej: Viajes 2026):");
-        if(!name) return;
-        db.temporadas.push({ id: 't_' + Date.now(), nombre: name, emoji: '📅', destinos: [] });
-        renderTree();
-        await saveDataToDrive();
-    }
-
-    async function addDestino(tempId) {
-        const name = prompt("Nombre del nuevo Destino:");
-        if(!name) return;
-        const emoji = prompt("Introduce un Emoji para el viaje (Ej: ✈️, 🌲, 🗺️):", "📍");
-        
-        db.temporadas.forEach(t => {
-            if(t.id === tempId) {
-                if(!t.destinos) t.destinos = [];
-                t.destinos.push({
-                    id: 'd_' + Date.now(), nombre: name, emoji: emoji || '📍',
-                    diario: '', gastos: { transp:0, aloj:0, ocio:0 }, items: []
-                });
-            }
-        });
-        renderTree();
-        await saveDataToDrive();
-    }
-
-    async function deleteDestino(destId) {
-        if(!confirm("¿Seguro que quieres eliminar este viaje? Se borrarán todos sus diarios y gastos.")) return;
-        db.temporadas.forEach(t => {
-            if(t.destinos) t.destinos = t.destinos.filter(d => d.id !== destId);
-        });
-        if(currentDestinoId === destId) {
-            currentDestinoId = null;
-            document.getElementById('work-area').style.display = 'none';
-            document.getElementById('empty-view').style.display = 'flex';
-            document.getElementById('destino-header-title').innerText = "Selecciona un destino";
-        }
-        renderTree();
-        await saveDataToDrive();
-    }
-
-    /* ══ CONTROLADORES PESTAÑAS Y CÁLCULOS ══ */
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
-        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('activo'));
-        
-        event.target.classList.add('activo');
-        document.getElementById('pane-' + tabName).classList.add('activo');
-    }
-
-    function calcTotalGastos() {
-        const t = parseFloat(document.getElementById('g-transp').value) || 0;
-        const a = parseFloat(document.getElementById('g-aloj').value) || 0;
-        const o = parseFloat(document.getElementById('g-ocio').value) || 0;
-        document.getElementById('g-total').innerText = (t + a + o).toLocaleString('es-ES') + ' €';
-        autoSaveDataTrigger();
-    }
-
-    /* ══ SECCIÓN CHECKLISTS ══ */
-    function renderChecklist(items) {
-        const container = document.getElementById('checklist-container');
-        container.innerHTML = '';
-        if(items.length === 0) {
-            container.innerHTML = '<p style="color:var(--grey6); font-size:13px; text-align:center; padding:10px 0;">No hay elementos en la lista.</p>';
-            return;
-        }
-
-        items.forEach((item, index) => {
-            const row = document.createElement('div');
-            row.className = 'check-item';
-            const checkClass = item.checked ? 'check-left completado' : 'check-left';
-            row.innerHTML = `
-                <div class="${checkClass}">
-                    <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleCheckItem(${index})">
-                    <span>${escapeHTML(item.nombre)}</span>
-                </div>
-                <button class="btn-icon-action" style="color:var(--grey6)" onclick="deleteCheckItem(${index})"><span class="material-icons-round" style="font-size:16px;">delete</span></button>
-            `;
-            container.appendChild(row);
-        });
-    }
-
-    function addCheckItem() {
-        const input = document.getElementById('new-item-name');
-        const text = input.value.trim();
-        if(!text || !currentDestinoId) return;
-
-        db.temporadas.forEach(t => {
-            if(t.destinos) {
-                t.destinos.forEach(d => {
-                    if(d.id === currentDestinoId) {
-                        if(!d.items) d.items = [];
-                        d.items.push({ nombre: text, checked: false });
-                        renderChecklist(d.items);
-                    }
-                });
-            }
-        });
-        input.value = '';
-        autoSaveDataTrigger();
-    }
-
-    function toggleCheckItem(index) {
-        db.temporadas.forEach(t => {
-            if(t.destinos) {
-                t.destinos.forEach(d => {
-                    if(d.id === currentDestinoId) {
-                        d.items[index].checked = !d.items[index].checked;
-                        renderChecklist(d.items);
-                    }
-                });
-            }
-        });
-        autoSaveDataTrigger();
-    }
-
-    function deleteCheckItem(index) {
-        db.temporadas.forEach(t => {
-            if(t.destinos) {
-                t.destinos.forEach(d => {
-                    if(d.id === currentDestinoId) {
-                        d.items.splice(index, 1);
-                        renderChecklist(d.items);
-                    }
-                });
-            }
-        });
-        autoSaveDataTrigger();
-    }
-
-    /* ══ UTILIDADES EXTRAS ══ */
-    function toggleTema() {
-        document.documentElement.classList.toggle('tema-claro');
-    }
-
-    function toggleSidebarMovil() {
-        document.getElementById('sidebar').classList.toggle('open');
-        document.getElementById('sidebar-overlay').classList.toggle('open');
-    }
-
-    function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
-    }
-  </script>
-</body>
-</html>
+          temporadas: [{ id: "t_1", nombre: "Europa 2026", emoji: "🇪🇺" }],
+          destinos: [{ id: "d_1", temporadaId: "t_1", nombre: "Alsacia (Colmar y Estrasburgo)", emoji: "🎄" }],
+          items:
