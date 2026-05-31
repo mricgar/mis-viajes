@@ -720,7 +720,7 @@
       <strong id="drive-banner-title">Sin sincronización</strong>
       <span id="drive-banner-sub">Conecta Google Drive para guardar automáticamente</span>
     </div>
-    <button class="btn-drive conectar" id="drive-btn" onclick="iniciarOAuth()">Conectar Drive</button>
+    <button class="btn-drive conectar" id="drive-btn" onclick="handleAuthClick()">Conectar Drive</button>
   </div>
   <div class="stats" id="stats-global"></div>
   <div class="temporadas-grid" id="temporadas-grid"></div>
@@ -1157,8 +1157,16 @@ async function autoguardarJSON() {
 
 // ── Cargar desde Drive ────────────────────────────────────────────────────
 async function cargarDesdeDrive() {
-  const res  = await gapi.client.drive.files.get({ fileId: driveFileId, alt: 'media' });
-  const data = res.result;
+  const res = await gapi.client.drive.files.get({ fileId: driveFileId, alt: 'media' });
+  let data = res.result;
+  // En algunos navegadores móviles res.result llega como string en vez de objeto
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch(e) {
+      console.error('Error parseando JSON de Drive:', e);
+      actualizarBannerDrive('error', 'Error al leer datos de Drive');
+      return;
+    }
+  }
   if (data && data.version >= 3 && Array.isArray(data.temporadas)) {
     temporadas = data.temporadas || [];
     destinos   = data.destinos   || [];
@@ -1168,9 +1176,13 @@ async function cargarDesdeDrive() {
     localStorage.setItem(CLAVE_I, JSON.stringify(items));
     renderTemporadas();
     toast('☁️ Datos cargados desde Drive');
-  } else if (data && (!data.temporadas || data.temporadas.length === 0)) {
-    // Archivo vacío en Drive → subir lo que hay en local
+  } else if (data && Array.isArray(data.temporadas) && data.temporadas.length === 0
+             && destinos.length === 0 && items.length === 0) {
+    // Solo sube si Drive Y local están vacíos (primer uso real)
     await subirADrive();
+  } else if (!data || (!data.temporadas && !data.version)) {
+    // Archivo Drive vacío o corrupto, y hay datos locales → subir local
+    if (temporadas.length > 0) await subirADrive();
   }
 }
 
