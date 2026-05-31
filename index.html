@@ -1052,13 +1052,7 @@ async function startDriveApp() {
     });
     const files = response.result.files;
     if (files && files.length > 0) {
-      // Usar siempre el más reciente; si hay duplicados, borrar los viejos
       driveFileId = files[0].id;
-      if (files.length > 1) {
-        files.slice(1).forEach(f =>
-          gapi.client.drive.files.delete({ fileId: f.id }).catch(()=>{})
-        );
-      }
       await cargarDesdeDrive();
     } else {
       await crearArchivoDrive();
