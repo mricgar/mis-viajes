@@ -1042,9 +1042,17 @@ function handleAuthClick() {
 }
 
 // ── startApp: busca o crea el archivo en Drive ────────────────────────────
+async function esperarGapi() {
+  if (gapiInited) return;
+  return new Promise(resolve => {
+    const t = setInterval(() => { if (gapiInited) { clearInterval(t); resolve(); } }, 100);
+  });
+}
+
 async function startDriveApp() {
   try {
     actualizarBannerDrive('saving', 'Conectando con Drive...');
+    await esperarGapi();
     const response = await gapi.client.drive.files.list({
       q: `name='${FILE_NAME}' and trashed=false`,
       fields: 'files(id,name,modifiedTime)',
