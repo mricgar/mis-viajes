@@ -228,13 +228,15 @@
     line-height: 1.2;
   }
   html.tema-claro .temp-nombre { color: #1a1410; }
-  .temp-del-btn {
+  .temp-del-btn, .temp-edit-btn {
     background: none; border: none; font-size: 14px;
     cursor: pointer; opacity: 0; padding: 4px; flex-shrink: 0;
     transition: opacity 0.2s; border-radius: 6px;
   }
-  .temp-card:hover .temp-del-btn { opacity: 0.4; }
-  .temp-del-btn:hover { opacity: 1 !important; background: rgba(192,33,42,0.15); }
+  .temp-card:hover .temp-del-btn,
+  .temp-card:hover .temp-edit-btn { opacity: 0.4; }
+  .temp-del-btn:hover  { opacity: 1 !important; background: rgba(192,33,42,0.15); }
+  .temp-edit-btn:hover { opacity: 1 !important; background: rgba(100,100,100,0.15); }
 
   .temp-notas {
     font-size: 13px; color: var(--grey7); line-height: 1.5;
@@ -360,12 +362,25 @@
   .dest-fav-dot { position: absolute; top: 9px; right: 11px; font-size: 13px; opacity: 0; }
   .dest-fav-dot.visible { opacity: 1; }
   .dest-actions { position: absolute; top: 9px; left: 9px; }
-  .btn-dest-del {
+  .btn-dest-del, .btn-dest-edit {
     background: none; border: none; font-size: 13px;
     cursor: pointer; opacity: 0; transition: opacity 0.2s; padding: 2px;
   }
-  .dest-card:hover .btn-dest-del { opacity: 0.4; }
-  .btn-dest-del:hover { opacity: 1 !important; }
+  .dest-card:hover .btn-dest-del,
+  .dest-card:hover .btn-dest-edit { opacity: 0.4; }
+  .btn-dest-del:hover  { opacity: 1 !important; }
+  .btn-dest-edit:hover { opacity: 1 !important; }
+
+  .dest-presupuesto {
+    font-size: 13px; font-family: 'Playfair Display', serif;
+    font-weight: 700; color: var(--red-bright); margin-top: 5px;
+  }
+  .dest-notas-mini {
+    font-size: 11px; color: var(--grey7); margin-top: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; line-height: 1.4; text-align: left;
+  }
+  html.tema-claro .dest-notas-mini { color: #4a3f35; }
 
   /* ══ ITEMS GRID (vista 3) ══ */
   .items-grid {
@@ -432,9 +447,10 @@
   .card-estrella {
     background: none; border: none; font-size: 18px;
     cursor: pointer; padding: 0; line-height: 1;
-    opacity: 0.25; transition: opacity 0.2s, transform 0.2s;
+    opacity: 0.45; transition: opacity 0.2s, transform 0.2s;
   }
   .card-estrella.fav { opacity: 1; }
+  .card-estrella:hover { opacity: 0.8; }
   .card-estrella:active { transform: scale(1.3); }
   .card-titulo {
     font-family: 'Playfair Display', serif;
@@ -1447,6 +1463,18 @@ function eliminarItem(id) {
   guardarTodo();
   renderDetalle();
 }
+function clonarItem(id) {
+  const it = items.find(i=>i.id===id);
+  if (!it) return;
+  const clon = { ...it, id: Date.now(), titulo: '(Copia) ' + it.titulo, favorito: false,
+    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) };
+  const idx = items.findIndex(i=>i.id===id);
+  items.splice(idx+1, 0, clon);
+  guardarTodo();
+  renderDetalle();
+  toast('📋 Opción clonada');
+}
+
 function toggleFav(id) {
   items = items.map(i=>i.id===id?{...i,favorito:!i.favorito}:i);
   guardarTodo();
@@ -1647,7 +1675,10 @@ function renderTemporadas() {
           <span class="temp-emoji">${t.emoji}</span>
           <div class="temp-nombre">${t.nombre}</div>
         </div>
-        <button class="temp-del-btn" onclick="eliminarTemporada(${t.id},event)" title="Eliminar">🗑</button>
+        <div style="display:flex;gap:2px;flex-shrink:0">
+          <button class="temp-edit-btn" onclick="abrirModalTemporada(${t.id});event.stopPropagation()" title="Editar">✏️</button>
+          <button class="temp-del-btn"  onclick="eliminarTemporada(${t.id},event)" title="Eliminar">🗑</button>
+        </div>
       </div>
       ${t.notas ? `<div class="temp-notas">${t.notas.replace(/</g,'&lt;')}</div>` : ''}
       ${tDests.length ? `<div class="temp-destinos-row">${destChips}${masChip}</div>` : ''}
@@ -1699,20 +1730,32 @@ function renderDestinos() {
   }
 
   grid.innerHTML = listaRender.map(dest => {
-    const its2  = items.filter(i=>i.destinoId===dest.id);
-    const tipos = [...new Set(its2.map(i=>i.tipo))];
-    const badges= tipos.map(t=>`<span class="dest-badge">${TIPO_EMOJI[t]||'📌'} ${t}</span>`).join('');
-    const hasFav= its2.some(i=>i.favorito);
+    const its2   = items.filter(i=>i.destinoId===dest.id);
+    const tipos  = [...new Set(its2.map(i=>i.tipo))];
+    const badges = tipos.map(t=>`<span class="dest-badge">${TIPO_EMOJI[t]||'📌'} ${t}</span>`).join('');
+    const hasFav = its2.some(i=>i.favorito);
     const esDescDest = dest.estado === 'descartado';
+
+    const favItems = its2.filter(i=>i.favorito && i.estado!=='descartado');
+    const precios  = favItems.map(i=>{
+      const n = parseFloat((i.precio||'').replace(/[^\d.,]/g,'').replace(',','.'));
+      return isNaN(n) ? 0 : n;
+    }).filter(n=>n>0);
+    const totalFav = precios.reduce((a,b)=>a+b,0);
+    const moneda   = (()=>{ for(const i of favItems){ const m=(i.precio||'').match(/[€$£¥]/); if(m) return m[0]; } return '€'; })();
+
     return `<div class="dest-card${esDescDest?' descartado':''}" onclick="irADestino(${dest.id})">
-      <div class="dest-actions">
-        <button class="btn-dest-del" onclick="eliminarDestino(${dest.id},event)">🗑</button>
+      <div class="dest-actions" style="display:flex;gap:2px">
+        <button class="btn-dest-del"  onclick="eliminarDestino(${dest.id},event)" title="Eliminar">🗑</button>
+        <button class="btn-dest-edit" onclick="abrirModalDestino(${dest.id});event.stopPropagation()" title="Editar">✏️</button>
       </div>
       <span class="dest-fav-dot ${hasFav?'visible':''}">⭐</span>
       <span class="dest-emoji">${dest.emoji}</span>
       <div class="dest-nombre">${dest.nombre}</div>
       ${badges ? `<div class="dest-badges">${badges}</div>` : ''}
       <div class="dest-count">${its2.length?`<strong>${its2.length}</strong> opcion${its2.length===1?'':'es'}`:'<span style="opacity:.4">Sin opciones</span>'}</div>
+      ${totalFav>0 ? `<div class="dest-presupuesto">⭐ ~${totalFav.toLocaleString('es-ES',{maximumFractionDigits:0})} ${moneda}</div>` : ''}
+      ${dest.notas ? `<div class="dest-notas-mini">${dest.notas.replace(/</g,'&lt;')}</div>` : ''}
       <div class="dest-card-descartado-badge">❌ Descartado</div>
       <button class="btn-dest-toggle-desc" onclick="toggleDescartadoDest(${dest.id},event)" title="${esDescDest?'Reactivar':'Descartar'}">
         ${esDescDest?'↩ Reactivar':'❌ Descartar'}
@@ -1773,6 +1816,7 @@ function renderDetalle() {
       ${urlHtml}${notasHtml}
       <div class="card-actions">
         <button class="btn-sm primary" onclick="abrirModalItem(${it.id})">✏ Editar</button>
+        <button class="btn-sm" onclick="clonarItem(${it.id})">📋 Clonar</button>
         <button class="btn-sm ${esDescartado?'':'danger'}" style="${esDescartado?'color:var(--red-bright);border-color:var(--red)':''}" onclick="toggleDescartadoItem(${it.id})">${esDescartado?'↩ Reactivar':'❌ Descartar'}</button>
         <button class="btn-sm danger"  onclick="eliminarItem(${it.id})">🗑 Borrar</button>
       </div>
