@@ -1158,15 +1158,25 @@ async function autoguardarJSON() {
 // ── Cargar desde Drive ────────────────────────────────────────────────────
 async function cargarDesdeDrive() {
   const res = await gapi.client.drive.files.get({ fileId: driveFileId, alt: 'media' });
+
+  // gapi con alt:media puede devolver el contenido en res.result (objeto o string)
+  // o en res.body (string) según el navegador. Probamos ambos.
   let data = res.result;
-  // En algunos navegadores móviles res.result llega como string en vez de objeto
-  if (typeof data === 'string') {
+  const esVacio = !data || (typeof data === 'object' && Object.keys(data).length === 0);
+  if (esVacio && res.body) {
+    try { data = JSON.parse(res.body); } catch(e) {
+      console.error('Error parseando res.body de Drive:', e);
+      actualizarBannerDrive('error', 'Error al leer datos de Drive');
+      return;
+    }
+  } else if (typeof data === 'string') {
     try { data = JSON.parse(data); } catch(e) {
-      console.error('Error parseando JSON de Drive:', e);
+      console.error('Error parseando res.result de Drive:', e);
       actualizarBannerDrive('error', 'Error al leer datos de Drive');
       return;
     }
   }
+
   if (data && data.version >= 3 && Array.isArray(data.temporadas)) {
     temporadas = data.temporadas || [];
     destinos   = data.destinos   || [];
@@ -1176,14 +1186,13 @@ async function cargarDesdeDrive() {
     localStorage.setItem(CLAVE_I, JSON.stringify(items));
     renderTemporadas();
     toast('☁️ Datos cargados desde Drive');
-  } else if (data && Array.isArray(data.temporadas) && data.temporadas.length === 0
-             && destinos.length === 0 && items.length === 0) {
-    // Solo sube si Drive Y local están vacíos (primer uso real)
+  } else if (!data || (Array.isArray(data.temporadas) && data.temporadas.length === 0
+             && destinos.length === 0 && items.length === 0)) {
+    // Drive vacío y local también vacío → primer uso, subir estado inicial
     await subirADrive();
-  } else if (!data || (!data.temporadas && !data.version)) {
-    // Archivo Drive vacío o corrupto, y hay datos locales → subir local
-    if (temporadas.length > 0) await subirADrive();
   }
+  // En cualquier otro caso (datos locales presentes, Drive sin datos legibles)
+  // no tocamos Drive para no machacar datos
 }
 
 function copiaDeSeguridad() {
