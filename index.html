@@ -1245,18 +1245,24 @@ function actualizarBannerDrive(estado, texto) {
 // ── Guardar en Drive ──────────────────────────────────────────────────────
 async function fetchConToken(url, opciones) {
   let token = gapi.client.getToken();
-  if (!token) throw new Error('Sin token');
+  console.log('[Drive] token:', token ? 'ok access_token=' + (token.access_token||'').slice(0,20) : 'NULL');
+  if (!token || !token.access_token) throw new Error('Sin token válido');
 
-  let resp = await fetch(url, {
-    ...opciones,
-    headers: { ...opciones.headers, 'Authorization': 'Bearer ' + token.access_token }
-  });
+  let resp;
+  try {
+    resp = await fetch(url, {
+      ...opciones,
+      headers: { ...opciones.headers, 'Authorization': 'Bearer ' + token.access_token }
+    });
+  } catch(e) {
+    console.error('[Drive] fetch falló:', e.message, 'url:', url.slice(0,80));
+    throw e;
+  }
 
   // Token caducado → pedir nuevo silenciosamente y reintentar
   if (resp.status === 401) {
     await new Promise((resolve, reject) => {
       tokenClient.requestAccessToken({ prompt: '' });
-      // Esperar a que gisLoaded callback renueve el token
       let intentos = 0;
       const t = setInterval(() => {
         intentos++;
