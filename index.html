@@ -760,6 +760,13 @@
     </div>
   </header>
   <div class="stats" id="stats-destinos"></div>
+  <div class="drive-banner desconectado" id="drive-banner-dest">
+    <span class="drive-banner-icon">☁️</span>
+    <div class="drive-banner-text">
+      <strong id="drive-banner-title-dest">Sin sincronización</strong>
+      <span id="drive-banner-sub-dest"></span>
+    </div>
+  </div>
   <label class="toggle-descartados-dest">
     <input type="checkbox" id="show-dest-descartados" checked onchange="renderDestinos()">
     Mostrar destinos descartados
@@ -794,6 +801,13 @@
     <button class="filter-chip" onclick="filtrarDetalle('general',this)">📌 General</button>
   </div>
   <div class="stats" id="stats-detalle"></div>
+  <div class="drive-banner desconectado" id="drive-banner-det">
+    <span class="drive-banner-icon">☁️</span>
+    <div class="drive-banner-text">
+      <strong id="drive-banner-title-det">Sin sincronización</strong>
+      <span id="drive-banner-sub-det"></span>
+    </div>
+  </div>
   <label class="toggle-descartados">
     <input type="checkbox" id="show-descartados" checked onchange="renderDetalle()">
     Mostrar descartados
@@ -1110,42 +1124,43 @@ function desconectarDrive() {
 
 // ── Banner estado ─────────────────────────────────────────────────────────
 function actualizarBannerDrive(estado, texto) {
-  const banner = document.getElementById('drive-banner');
-  const title  = document.getElementById('drive-banner-title');
-  const sub    = document.getElementById('drive-banner-sub');
-  const btn    = document.getElementById('drive-btn');
-  if (!banner) return;
+  // Actualizar banner principal (vista temporadas) y los secundarios
+  const banners = [
+    { banner: document.getElementById('drive-banner'), title: document.getElementById('drive-banner-title'), sub: document.getElementById('drive-banner-sub'), btn: document.getElementById('drive-btn'), main: true },
+    { banner: document.getElementById('drive-banner-dest'), title: document.getElementById('drive-banner-title-dest'), sub: document.getElementById('drive-banner-sub-dest'), btn: null, main: false },
+    { banner: document.getElementById('drive-banner-det'), title: document.getElementById('drive-banner-title-det'), sub: document.getElementById('drive-banner-sub-det'), btn: null, main: false },
+  ];
 
-  const dot = banner.querySelector('.drive-dot') || (() => {
-    const d = document.createElement('span');
-    d.className = 'drive-dot';
-    d.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;';
-    banner.insertBefore(d, banner.firstChild.nextSibling);
-    return d;
-  })();
+  banners.forEach(({ banner, title, sub, btn }) => {
+    if (!banner) return;
 
-  if (estado === 'sync') {
-    banner.classList.remove('desconectado');
-    dot.style.background = '#00b37e';
-    title.textContent = '☁️ ' + (texto || 'Sincronizado con Drive');
-    const ts = localStorage.getItem('vj_drive_sync');
-    sub.textContent = ts ? 'Última sync: ' + new Date(parseInt(ts)).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : 'Todo guardado';
-    btn.textContent = 'Desconectar';
-    btn.className = 'btn-drive desconectar';
-    btn.onclick = desconectarDrive;
-  } else if (estado === 'saving') {
-    dot.style.background = '#e1b12c';
-    title.textContent = '⏳ ' + (texto || 'Sincronizando...');
-    sub.textContent = '';
-  } else {
-    banner.classList.add('desconectado');
-    dot.style.background = '#555';
-    title.textContent = texto || 'Sin sincronización con Drive';
-    sub.textContent = 'Conecta para guardar en la nube';
-    btn.textContent = 'Conectar Drive';
-    btn.className = 'btn-drive conectar';
-    btn.onclick = handleAuthClick;
-  }
+    const dot = banner.querySelector('.drive-dot') || (() => {
+      const d = document.createElement('span');
+      d.className = 'drive-dot';
+      d.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;';
+      banner.insertBefore(d, banner.firstChild.nextSibling);
+      return d;
+    })();
+
+    if (estado === 'sync') {
+      banner.classList.remove('desconectado');
+      dot.style.background = '#00b37e';
+      title.textContent = '☁️ ' + (texto || 'Sincronizado con Drive');
+      const ts = localStorage.getItem('vj_drive_sync');
+      sub.textContent = ts ? 'Última sync: ' + new Date(parseInt(ts)).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : 'Todo guardado';
+      if (btn) { btn.textContent = 'Desconectar'; btn.className = 'btn-drive desconectar'; btn.onclick = desconectarDrive; }
+    } else if (estado === 'saving') {
+      dot.style.background = '#e1b12c';
+      title.textContent = '⏳ ' + (texto || 'Sincronizando...');
+      sub.textContent = '';
+    } else {
+      banner.classList.add('desconectado');
+      dot.style.background = '#555';
+      title.textContent = texto || 'Sin sincronización con Drive';
+      sub.textContent = 'Conecta para guardar en la nube';
+      if (btn) { btn.textContent = 'Conectar Drive'; btn.className = 'btn-drive conectar'; btn.onclick = handleAuthClick; }
+    }
+  });
 }
 
 // ── Guardar en Drive ──────────────────────────────────────────────────────
