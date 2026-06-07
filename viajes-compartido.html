@@ -1094,13 +1094,10 @@ async function startDriveApp() {
   try {
     actualizarBannerDrive('saving', 'Conectando con Drive...');
     await esperarGapi();
-    const token = gapi.client.getToken();
     driveFileId = SHARED_FILE_ID;
-    toast('🔑 Token: ' + (token ? 'OK' : 'NULL') + ' | FileId: ' + driveFileId.slice(0,8) + '…', 5000);
     await cargarDesdeDrive();
     actualizarBannerDrive('sync', 'Sincronizado · Viajes de Maria');
   } catch(err) {
-    toast('❌ Error: ' + (err && (err.message || err.status || JSON.stringify(err))), 8000);
     actualizarBannerDrive('error', 'Error de conexión');
   }
 }
@@ -1206,8 +1203,6 @@ async function cargarDesdeDrive() {
     { headers: { 'Authorization': 'Bearer ' + token.access_token } }
   );
   if (!resp.ok) {
-    const txt = await resp.text();
-    toast('❌ HTTP ' + resp.status + ': ' + txt.slice(0, 100), 8000);
     actualizarBannerDrive('error', 'Error al leer datos de Drive');
     return;
   }
