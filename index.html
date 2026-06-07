@@ -1057,7 +1057,7 @@ function generarJSON() {
 
 // ══ GOOGLE DRIVE OAuth (patrón gapi + gsi idéntico al index.html) ══
 const CLIENT_ID  = '940633332310-8jvdkccdfeedcbna2sl928bpk3lfe2k1.apps.googleusercontent.com';
-const SCOPES     = 'https://www.googleapis.com/auth/drive.file';
+const SCOPES     = 'https://www.googleapis.com/auth/drive';
 const FILE_NAME  = 'viajes_backup.json';
 
 let gapiInited  = false;
@@ -1167,42 +1167,48 @@ function desconectarDrive() {
 
 // ── Banner estado ─────────────────────────────────────────────────────────
 function actualizarBannerDrive(estado, texto) {
-  // Actualizar banner principal (vista temporadas) y los secundarios
-  const banners = [
-    { banner: document.getElementById('drive-banner'), title: document.getElementById('drive-banner-title'), sub: document.getElementById('drive-banner-sub'), btn: document.getElementById('drive-btn'), main: true },
-    { banner: document.getElementById('drive-banner-dest'), title: document.getElementById('drive-banner-title-dest'), sub: document.getElementById('drive-banner-sub-dest'), btn: null, main: false },
-    { banner: document.getElementById('drive-banner-det'), title: document.getElementById('drive-banner-title-det'), sub: document.getElementById('drive-banner-sub-det'), btn: null, main: false },
-  ];
+  const banner = document.getElementById('drive-banner');
+  const title  = document.getElementById('drive-banner-title');
+  const sub    = document.getElementById('drive-banner-sub');
+  const btn    = document.getElementById('drive-btn');
+  if (!banner) return;
 
-  banners.forEach(({ banner, title, sub, btn }) => {
-    if (!banner) return;
+  const dot = banner.querySelector('.drive-dot') || (() => {
+    const d = document.createElement('span');
+    d.className = 'drive-dot';
+    d.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;';
+    banner.insertBefore(d, banner.firstChild.nextSibling);
+    return d;
+  })();
 
-    const dot = banner.querySelector('.drive-dot') || (() => {
-      const d = document.createElement('span');
-      d.className = 'drive-dot';
-      d.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;';
-      banner.insertBefore(d, banner.firstChild.nextSibling);
-      return d;
-    })();
+  if (estado === 'sync') {
+    banner.classList.remove('desconectado');
+    dot.style.background = '#00b37e';
+    title.textContent = '☁️ ' + (texto || 'Sincronizado con Drive');
+    const ts = localStorage.getItem('vj_drive_sync');
+    sub.textContent = ts ? 'Última sync: ' + new Date(parseInt(ts)).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : 'Todo guardado';
+    btn.textContent = 'Desconectar'; btn.className = 'btn-drive desconectar'; btn.onclick = desconectarDrive;
+  } else if (estado === 'saving') {
+    dot.style.background = '#e1b12c';
+    title.textContent = '⏳ ' + (texto || 'Sincronizando...');
+    sub.textContent = '';
+  } else {
+    banner.classList.add('desconectado');
+    dot.style.background = '#555';
+    title.textContent = texto || 'Sin sincronización con Drive';
+    sub.textContent = 'Conecta para guardar en la nube';
+    btn.textContent = 'Conectar Drive'; btn.className = 'btn-drive conectar'; btn.onclick = handleAuthClick;
+  }
 
-    if (estado === 'sync') {
-      banner.classList.remove('desconectado');
-      dot.style.background = '#00b37e';
-      title.textContent = '☁️ ' + (texto || 'Sincronizado con Drive');
-      const ts = localStorage.getItem('vj_drive_sync');
-      sub.textContent = ts ? 'Última sync: ' + new Date(parseInt(ts)).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : 'Todo guardado';
-      if (btn) { btn.textContent = 'Desconectar'; btn.className = 'btn-drive desconectar'; btn.onclick = desconectarDrive; }
-    } else if (estado === 'saving') {
-      dot.style.background = '#e1b12c';
-      title.textContent = '⏳ ' + (texto || 'Sincronizando...');
-      sub.textContent = '';
-    } else {
-      banner.classList.add('desconectado');
-      dot.style.background = '#555';
-      title.textContent = texto || 'Sin sincronización con Drive';
-      sub.textContent = 'Conecta para guardar en la nube';
-      if (btn) { btn.textContent = 'Conectar Drive'; btn.className = 'btn-drive conectar'; btn.onclick = handleAuthClick; }
-    }
+  // Banners secundarios (sin botón)
+  ['drive-banner-dest','drive-banner-det'].forEach(id => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    const t = b.querySelector('strong') || b.querySelector('[id^="drive-banner-title"]');
+    const s = b.querySelector('span:not(strong)') || b.querySelector('[id^="drive-banner-sub"]');
+    if (estado === 'sync') { b.classList.remove('desconectado'); if(t) t.textContent = '☁️ Sincronizado'; if(s) s.textContent = ''; }
+    else if (estado === 'saving') { if(t) t.textContent = '⏳ Guardando...'; if(s) s.textContent = ''; }
+    else { b.classList.add('desconectado'); if(t) t.textContent = 'Sin sincronización'; if(s) s.textContent = 'Conecta para guardar en la nube'; }
   });
 }
 
