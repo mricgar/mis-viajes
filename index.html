@@ -1111,7 +1111,7 @@ async function startDriveApp() {
     actualizarBannerDrive('sync', 'Sincronizado con Drive');
   } catch(err) {
     console.error('startDriveApp error:', err);
-    actualizarBannerDrive('error', 'Error: ' + (err.message || err));
+    actualizarBannerDrive('error', 'Error: ' + (err.message || JSON.stringify(err)));
   }
 }
 
