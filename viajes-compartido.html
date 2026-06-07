@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mi Diario de Viajes · Compartido</title>
+<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ══ PALETA OSCURA (default) ══ */
+  :root {
+    --red: #c0212a; --red-bright: #e03a44;
+    --grey1: #0d0d0d; --grey2: #141414; --grey3: #1e1e1e;
+    --grey4: #2a2a2a; --grey5: #3a3a3a; --grey6: #555;
+    --grey7: #888; --grey8: #bbb; --grey9: #e8e8e8;
+    --border: #2e2e2e; --shadow: rgba(0,0,0,0.45);
+  }
+
+  /* ══ PALETA CLARA ══ */
+  html.tema-claro {
+    --red: #c0622a; --red-bright: #e8874a;
+    --grey1: #f5ede0; --grey2: #1a1410; --grey3: #fffcf8;
+    --grey4: #e8d9c4; --grey5: #d0bfa8; --grey6: #8a7060;
+    --grey7: #4a3f35; --grey8: #2a1f18; --grey9: #1a1410;
+    --border: #e0ccb4; --shadow: rgba(26,20,16,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--grey1);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--grey9);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+  html:not(.tema-claro) body {
+    background-image:
+      radial-gradient(circle at 15% 40%, rgba(192,33,42,0.07) 0%, transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(192,33,42,0.03) 0%, transparent 35%);
+  }
+  html.tema-claro body {
+    background-image:
+      radial-gradient(circle at 20% 50%, rgba(192,98,42,0.06) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(58,107,138,0.05) 0%, transparent 40%);
+  }
+
+  /* ══ VISTAS ══ */
+  .vista { display: none; }
+  .vista.activa { display: block; }
+
+  /* ══ HEADER ══ */
+  header {
+    padding: 16px 20px 13px;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  html:not(.tema-claro) header { background: var(--grey2); }
+  html.tema-claro        header { background: #1a1410; border-bottom-color: #2a1f18; }
+
+  .btn-back {
+    background: none; border: none; font-size: 22px;
+    cursor: pointer; padding: 0 4px; line-height: 1;
+    display: none; flex-shrink: 0;
+  }
+  html:not(.tema-claro) .btn-back { color: var(--grey8); }
+  html.tema-claro        .btn-back { color: #e8d9c4; }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(16px, 4vw, 21px);
+    font-weight: 700; flex: 1;
+    min-width: 0; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+    transition: color 0.3s;
+  }
+  html:not(.tema-claro) header h1 { color: var(--grey9); }
+  html.tema-claro        header h1 { color: #f5ede0; }
+  header h1 span { color: var(--red-bright); font-style: italic; }
+
+  /* breadcrumb bajo el titulo */
+  .breadcrumb {
+    font-size: 11px; color: var(--grey7);
+    letter-spacing: 0.3px; margin-top: 1px;
+    display: none;
+  }
+  .breadcrumb span { color: var(--red-bright); }
+  .header-title-wrap { flex: 1; min-width: 0; overflow: hidden; }
+  .header-title-wrap h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* ══ BOTONES HEADER ══ */
+  .btn-add {
+    background: var(--red); color: white; border: none;
+    border-radius: 50px; padding: 9px 15px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
+    transition: background 0.2s, transform 0.1s; white-space: nowrap;
+  }
+  .btn-add:active { transform: scale(0.96); }
+  .btn-add:hover  { background: var(--red-bright); }
+
+  .btn-menu {
+    border: none; font-size: 20px;
+    width: 36px; height: 36px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s; flex-shrink: 0;
+  }
+  html:not(.tema-claro) .btn-menu { background: var(--grey4); color: var(--grey8); }
+  html.tema-claro        .btn-menu { background: rgba(255,255,255,0.12); color: #e8d9c4; }
+  html:not(.tema-claro) .btn-menu:hover { background: var(--grey5); }
+  html.tema-claro        .btn-menu:hover { background: rgba(255,255,255,0.22); }
+
+  /* ══ DROPDOWN MENÚ ══ */
+  .menu-wrapper { position: relative; }
+  .dropdown {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    border-radius: 14px; min-width: 200px; overflow: hidden; z-index: 300;
+    animation: fadeIn 0.15s ease;
+    border: 1px solid var(--grey5);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  html:not(.tema-claro) .dropdown { background: var(--grey3); }
+  html.tema-claro        .dropdown { background: #fdf8f2; border-color: #d0bfa8; box-shadow: 0 8px 30px rgba(26,20,16,0.2); }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  .dropdown.open { display: block; }
+  .dropdown-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px; font-size: 14px;
+    cursor: pointer; border: none; background: none;
+    width: 100%; text-align: left;
+    font-family: 'DM Sans', sans-serif; transition: background 0.15s;
+    color: var(--grey9);
+  }
+  html.tema-claro .dropdown-item { color: #1a1410; }
+  html:not(.tema-claro) .dropdown-item:hover { background: var(--grey4); }
+  html.tema-claro        .dropdown-item:hover { background: #f0e4d0; }
+  .dropdown-item .di-icon { font-size: 18px; width: 24px; text-align: center; }
+  .dropdown-item .di-sub  { font-size: 11px; color: var(--grey7); display: block; margin-top: 1px; }
+  html.tema-claro .dropdown-item .di-sub { color: #4a3f35; }
+  .dropdown-sep { height: 1px; background: var(--grey5); margin: 4px 0; }
+  html.tema-claro .dropdown-sep { background: #e8d9c4; }
+
+  /* ══ STATS ══ */
+  .stats {
+    display: flex; gap: 10px;
+    padding: 14px 16px 6px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .stats::-webkit-scrollbar { display: none; }
+  .stat-card {
+    border-radius: 12px; padding: 10px 16px; min-width: 90px;
+    text-align: center; flex-shrink: 0;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: background 0.3s;
+  }
+  html:not(.tema-claro) .stat-card { background: var(--grey3); }
+  html.tema-claro        .stat-card { background: #fffcf8; border-color: #e8d9c4; }
+  .stat-card .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 700; color: var(--red-bright); line-height: 1;
+  }
+  .stat-card .label {
+    font-size: 10px; color: var(--grey7); margin-top: 3px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ══ FILTROS ══ */
+  .filters {
+    padding: 11px 16px; display: flex; gap: 8px;
+    overflow-x: auto; border-bottom: 1px solid var(--border);
+    scrollbar-width: none; transition: background 0.3s;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  html:not(.tema-claro) .filters { background: var(--grey2); }
+  html.tema-claro        .filters { background: #e8d9c4; border-bottom-color: #d0bfa8; }
+  .filter-chip {
+    border: 1.5px solid var(--grey5); background: transparent;
+    color: var(--grey7); border-radius: 50px; padding: 6px 14px;
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  html.tema-claro .filter-chip { border-color: #4a3f35; color: #4a3f35; }
+  .filter-chip.active { background: var(--red); color: white; border-color: var(--red); }
+  .filter-chip:hover:not(.active) { border-color: var(--grey7); color: var(--grey9); }
+  html.tema-claro .filter-chip:hover:not(.active) { color: #1a1410; border-color: #1a1410; }
+
+  /* ══ TEMPORADAS GRID (vista 1) ══ */
+  .temporadas-grid {
+    padding: 14px 16px 100px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .temp-card {
+    border-radius: 20px; padding: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 16px var(--shadow);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    position: relative; overflow: hidden;
+  }
+  html:not(.tema-claro) .temp-card { background: var(--grey3); }
+  html.tema-claro        .temp-card { background: #fffcf8; border-color: #e8d9c4; }
+  .temp-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--red);
+  }
+  .temp-card:hover { transform: translateY(-3px); box-shadow: 0 10px 32px var(--shadow); border-color: var(--red); }
+  .temp-card:active { transform: scale(0.98); }
+
+  .temp-card-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 8px; margin-bottom: 12px;
+  }
+  .temp-emoji-wrap { display: flex; align-items: center; gap: 10px; }
+  .temp-emoji { font-size: 32px; line-height: 1; flex-shrink: 0; }
+  .temp-nombre {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px; font-weight: 700; color: var(--grey9);
+    line-height: 1.2;
+  }
+  html.tema-claro .temp-nombre { color: #1a1410; }
+  .temp-del-btn, .temp-edit-btn {
+    background: none; border: none; font-size: 14px;
+    cursor: pointer; opacity: 0; padding: 4px; flex-shrink: 0;
+    transition: opacity 0.2s; border-radius: 6px;
+  }
+  .temp-card:hover .temp-del-btn,
+  .temp-card:hover .temp-edit-btn { opacity: 0.4; }
+  .temp-del-btn:hover  { opacity: 1 !important; background: rgba(192,33,42,0.15); }
+  .temp-edit-btn:hover { opacity: 1 !important; background: rgba(100,100,100,0.15); }
+
+  .temp-notas {
+    font-size: 13px; color: var(--grey7); line-height: 1.5;
+    margin-bottom: 14px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  html.tema-claro .temp-notas { color: #4a3f35; }
+
+  .temp-destinos-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .temp-dest-chip {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--grey4); border-radius: 50px;
+    padding: 5px 10px; font-size: 12px; color: var(--grey8);
+    border: 1px solid var(--grey5); transition: all 0.15s;
+    cursor: pointer; white-space: nowrap;
+    max-width: 130px; overflow: hidden; text-overflow: ellipsis;
+  }
+  html.tema-claro .temp-dest-chip { background: #f0e4d0; border-color: #d0bfa8; color: #2a1f18; }
+  .temp-dest-chip:hover { border-color: var(--red); color: var(--red-bright); }
+  .temp-dest-chip-emoji { font-size: 14px; flex-shrink: 0; }
+
+  .temp-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  html.tema-claro .temp-footer { border-top-color: #e8d9c4; }
+  .temp-stats-mini { display: flex; gap: 14px; }
+  .temp-stat { font-size: 12px; color: var(--grey7); }
+  .temp-stat strong { color: var(--red-bright); font-family: 'Playfair Display', serif; font-size: 16px; }
+  html.tema-claro .temp-stat { color: #4a3f35; }
+  .temp-open-btn {
+    font-size: 12px; color: var(--red-bright);
+    display: flex; align-items: center; gap: 4px;
+    font-weight: 500;
+  }
+
+  /* ══ DESTINOS GRID (vista 2) ══ */
+  .destinos-grid {
+    padding: 12px 16px 100px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+    gap: 12px;
+  }
+  .dest-card {
+    border-radius: 18px; padding: 18px 14px 14px;
+    border: 1px solid var(--border);
+    box-shadow: 0 3px 16px var(--shadow);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    position: relative; text-align: center;
+    border-top: 3px solid var(--red);
+  }
+  html:not(.tema-claro) .dest-card { background: var(--grey3); }
+  html.tema-claro        .dest-card { background: #fffcf8; border-color: #e8d9c4; }
+  .dest-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px var(--shadow); border-color: var(--red); }
+  .dest-card:active { transform: scale(0.97); }
+
+  .dest-card.descartado {
+    opacity: 0.45;
+    border-top-color: var(--grey6) !important;
+  }
+  .dest-card.descartado .dest-nombre { text-decoration: line-through; color: var(--grey6); }
+  html.tema-claro .dest-card.descartado .dest-nombre { color: #8a7060; }
+  .dest-card.descartado:hover { transform: none; opacity: 0.55; }
+  .btn-dest-toggle-desc {
+    display: none;
+    margin-top: 8px;
+    width: 100%;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    border: 1.5px solid var(--grey5);
+    background: transparent;
+    color: var(--grey7);
+    transition: all 0.15s;
+  }
+  html.tema-claro .btn-dest-toggle-desc { border-color: #d0bfa8; color: #4a3f35; }
+  .dest-card:hover .btn-dest-toggle-desc { display: block; }
+  .dest-card.descartado .btn-dest-toggle-desc { display: block; color: var(--red-bright); border-color: var(--red); }
+  .btn-dest-toggle-desc:hover { background: var(--grey4); color: var(--grey9); }
+  html.tema-claro .btn-dest-toggle-desc:hover { background: #f0e4d0; color: #1a1410; }
+  .dest-card.descartado .btn-dest-toggle-desc:hover { background: rgba(192,33,42,0.1); }
+  .dest-card-descartado-badge {
+    display: none;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+    color: var(--grey6); background: var(--grey4);
+    padding: 2px 7px; border-radius: 50px; margin-top: 5px;
+    text-transform: uppercase;
+  }
+  html.tema-claro .dest-card-descartado-badge { background: #e8d9c4; color: #8a7060; }
+  .dest-card.descartado .dest-card-descartado-badge { display: inline-block; }
+
+  /* toggle ocultar descartados en vista destinos */
+  .toggle-descartados-dest {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px 4px;
+    font-size: 12px; color: var(--grey7); cursor: pointer;
+    user-select: none;
+  }
+  .toggle-descartados-dest input { accent-color: var(--red); cursor: pointer; }
+  html.tema-claro .toggle-descartados-dest { color: #4a3f35; }
+  .dest-emoji { font-size: 34px; display: block; margin-bottom: 9px; line-height: 1; }
+  .dest-nombre {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px; font-weight: 700; color: var(--grey9);
+    margin-bottom: 7px; word-break: break-word;
+  }
+  html.tema-claro .dest-nombre { color: #1a1410; }
+  .dest-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-bottom: 6px; }
+  .dest-badge {
+    font-size: 10px; padding: 2px 6px; border-radius: 50px;
+    background: var(--grey4); color: var(--grey7);
+  }
+  html.tema-claro .dest-badge { background: #f0e4d0; color: #4a3f35; }
+  .dest-count { font-size: 12px; color: var(--grey7); margin-top: 4px; }
+  html.tema-claro .dest-count { color: #4a3f35; }
+  .dest-count strong { color: var(--red-bright); font-family: 'Playfair Display', serif; font-size: 14px; }
+  .dest-fav-dot { position: absolute; top: 9px; right: 11px; font-size: 13px; opacity: 0; }
+  .dest-fav-dot.visible { opacity: 1; }
+  .dest-actions { position: absolute; top: 9px; left: 9px; }
+  .btn-dest-del, .btn-dest-edit {
+    background: none; border: none; font-size: 13px;
+    cursor: pointer; opacity: 0; transition: opacity 0.2s; padding: 2px;
+  }
+  .dest-card:hover .btn-dest-del,
+  .dest-card:hover .btn-dest-edit { opacity: 0.4; }
+  .btn-dest-del:hover  { opacity: 1 !important; }
+  .btn-dest-edit:hover { opacity: 1 !important; }
+
+  .dest-presupuesto {
+    font-size: 13px; font-family: 'Playfair Display', serif;
+    font-weight: 700; color: var(--red-bright); margin-top: 5px;
+  }
+  .dest-notas-mini {
+    font-size: 11px; color: var(--grey7); margin-top: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; line-height: 1.4; text-align: left;
+  }
+  html.tema-claro .dest-notas-mini { color: #4a3f35; }
+
+  /* ══ ITEMS GRID (vista 3) ══ */
+  .items-grid {
+    padding: 12px 16px 100px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    border-radius: 16px; padding: 18px;
+    box-shadow: 0 3px 12px var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative; border-left: 4px solid var(--red);
+    border: 1px solid var(--border); border-left: 4px solid var(--red);
+  }
+  html:not(.tema-claro) .card { background: var(--grey3); }
+  html.tema-claro        .card { background: #fffcf8; border-color: #e8d9c4; }
+  .card[data-tipo="vuelo"]      { border-left-color: #5588aa; }
+  .card[data-tipo="hotel"]      { border-left-color: #557755; }
+  .card[data-tipo="actividad"]  { border-left-color: #8855aa; }
+  .card[data-tipo="transporte"] { border-left-color: #aa8833; }
+  .card[data-tipo="general"]    { border-left-color: var(--red); }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px var(--shadow); }
+
+  /* ══ DESCARTADO ══ */
+  .card.descartado {
+    opacity: 0.5;
+    border-left-color: var(--grey6) !important;
+    position: relative;
+  }
+  .card.descartado::after {
+    content: '❌ DESCARTADO';
+    position: absolute;
+    top: 10px; right: 12px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--grey6);
+    background: var(--grey4);
+    padding: 3px 8px; border-radius: 50px;
+  }
+  html.tema-claro .card.descartado::after { background: #e8d9c4; color: #8a7060; }
+  .card.descartado .card-titulo { text-decoration: line-through; color: var(--grey6); }
+  html.tema-claro .card.descartado .card-titulo { color: #8a7060; }
+  .card.descartado .card-precio { color: var(--grey6); }
+  .card.descartado:hover { transform: none; opacity: 0.6; }
+
+  /* toggle para mostrar/ocultar descartados */
+  .toggle-descartados {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px 4px;
+    font-size: 12px; color: var(--grey7); cursor: pointer;
+    user-select: none;
+  }
+  .toggle-descartados input { accent-color: var(--red); cursor: pointer; }
+  html.tema-claro .toggle-descartados { color: #4a3f35; }
+
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .card-tipo {
+    font-size: 10px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 1px; padding: 3px 8px; border-radius: 50px;
+    background: var(--grey4); color: var(--grey7);
+  }
+  html.tema-claro .card-tipo { background: #f0e4d0; color: #4a3f35; }
+  .card-estrella {
+    background: none; border: none; font-size: 18px;
+    cursor: pointer; padding: 0; line-height: 1;
+    opacity: 0.45; transition: opacity 0.2s, transform 0.2s;
+  }
+  .card-estrella.fav { opacity: 1; }
+  .card-estrella:hover { opacity: 0.8; }
+  .card-estrella:active { transform: scale(1.3); }
+  .card-titulo {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px; font-weight: 700; color: var(--grey9);
+    margin-bottom: 8px; line-height: 1.3;
+  }
+  html.tema-claro .card-titulo { color: #1a1410; }
+  .card-precio { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--red-bright); margin-bottom: 8px; }
+  .card-precio span { font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 400; color: var(--grey7); }
+  html.tema-claro .card-precio span { color: #4a3f35; }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .meta-tag { font-size: 12px; background: var(--grey4); color: var(--grey7); padding: 3px 8px; border-radius: 6px; }
+  html.tema-claro .meta-tag { background: #f0e4d0; color: #4a3f35; }
+  .card-notas { font-size: 13px; color: var(--grey7); line-height: 1.5; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
+  html.tema-claro .card-notas { color: #4a3f35; border-top-color: #e8d9c4; }
+  .card-fecha { font-size: 11px; color: var(--grey6); margin-top: 10px; }
+  .card-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #6699bb; text-decoration: none; margin-top: 4px; word-break: break-all; }
+  .card-link:hover { text-decoration: underline; }
+  html.tema-claro .card-link { color: #3a6b8a; }
+  .card-actions { display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+  html.tema-claro .card-actions { border-top-color: #e8d9c4; }
+
+  .btn-sm {
+    flex: 1; padding: 7px 12px; border-radius: 8px; font-size: 12px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    border: 1.5px solid var(--grey5); background: transparent;
+    color: var(--grey7); transition: all 0.15s; text-align: center;
+  }
+  html:not(.tema-claro) .btn-sm:hover { background: var(--grey4); color: var(--grey9); }
+  html.tema-claro        .btn-sm { border-color: #d0bfa8; color: #4a3f35; }
+  html.tema-claro        .btn-sm:hover { background: #f0e4d0; color: #1a1410; }
+  .btn-sm.danger { color: var(--red-bright); border-color: rgba(192,33,42,0.3); }
+  .btn-sm.danger:hover { background: rgba(192,33,42,0.12); }
+  .btn-sm.primary { background: var(--grey5); color: var(--grey9); border-color: var(--grey5); }
+  html.tema-claro .btn-sm.primary { background: #1a1410; color: white; border-color: #1a1410; }
+  .btn-sm.primary:hover { background: var(--grey6); }
+  html.tema-claro .btn-sm.primary:hover { background: #2a1f18; }
+
+  /* ══ MODAL ══ */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    z-index: 200; backdrop-filter: blur(4px);
+    align-items: flex-end; justify-content: center;
+  }
+  html:not(.tema-claro) .overlay { background: rgba(0,0,0,0.75); }
+  html.tema-claro        .overlay { background: rgba(26,20,16,0.65); }
+  .overlay.open { display: flex; }
+  .modal {
+    border-radius: 24px 24px 0 0; padding: 24px 20px 40px;
+    width: 100%; max-width: 600px; max-height: 92vh;
+    overflow-y: auto; animation: slideUp 0.28s ease;
+    border: 1px solid var(--grey5);
+  }
+  html:not(.tema-claro) .modal { background: var(--grey2); }
+  html.tema-claro        .modal { background: #fdf8f2; border-color: #e8d9c4; }
+  @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-handle { width: 40px; height: 4px; background: var(--grey5); border-radius: 2px; margin: 0 auto 18px; }
+  html.tema-claro .modal-handle { background: #e8d9c4; }
+  .modal h2 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 18px; color: var(--grey9); }
+  html.tema-claro .modal h2 { color: #1a1410; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.6px; color: var(--grey7); margin-bottom: 5px; }
+  html.tema-claro .form-group label { color: #4a3f35; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--grey5); border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 15px;
+    color: var(--grey9); background: var(--grey3);
+    outline: none; transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  html.tema-claro .form-group input,
+  html.tema-claro .form-group textarea,
+  html.tema-claro .form-group select { background: white; border-color: #e8d9c4; color: #1a1410; }
+  .form-group input::placeholder, .form-group textarea::placeholder { color: var(--grey6); }
+  html.tema-claro .form-group input::placeholder, html.tema-claro .form-group textarea::placeholder { color: #8a7060; }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--red); }
+  .form-group textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-guardar {
+    width: 100%; padding: 13px; background: var(--red); color: white;
+    border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 6px; transition: background 0.2s;
+  }
+  .btn-guardar:hover { background: var(--red-bright); }
+  .btn-cancelar {
+    width: 100%; padding: 11px; background: transparent;
+    border: none; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; cursor: pointer; margin-top: 4px;
+    color: var(--grey7);
+  }
+  html.tema-claro .btn-cancelar { color: #4a3f35; }
+
+  /* Emoji picker */
+  .modal-narrow { max-width: 420px; }
+  .emoji-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .emoji-opt {
+    font-size: 24px; cursor: pointer;
+    border: 2px solid transparent; border-radius: 8px; padding: 4px 6px;
+    transition: border-color 0.15s, transform 0.1s;
+    background: var(--grey3);
+  }
+  html.tema-claro .emoji-opt { background: #f0e4d0; }
+  .emoji-opt.sel { border-color: var(--red); transform: scale(1.1); }
+  .emoji-opt:hover { border-color: var(--grey6); }
+  html.tema-claro .emoji-opt:hover { border-color: #8a7060; }
+
+  /* ══ VACÍO ══ */
+  .empty { text-align: center; padding: 50px 20px; grid-column: 1/-1; }
+  .empty-icon { font-size: 48px; margin-bottom: 14px; opacity: 0.3; }
+  .empty h3 { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--grey8); margin-bottom: 8px; }
+  html.tema-claro .empty h3 { color: #2a1f18; }
+  .empty p { font-size: 14px; color: var(--grey6); line-height: 1.6; }
+  html.tema-claro .empty p { color: #4a3f35; }
+
+  /* ══ TOAST ══ */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    padding: 11px 20px; border-radius: 50px;
+    font-size: 14px; font-family: 'DM Sans', sans-serif;
+    z-index: 500; transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0; white-space: nowrap; pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    border: 1px solid var(--grey5);
+  }
+  html:not(.tema-claro) .toast { background: var(--grey4); color: var(--grey9); border-color: var(--grey5); }
+  html.tema-claro        .toast { background: #1a1410; color: #f5ede0; border-color: #2a1f18; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ══ IMPORTAR ══ */
+  .import-drop {
+    border: 2px dashed var(--grey5); border-radius: 12px;
+    padding: 28px 16px; text-align: center; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s; margin-bottom: 14px;
+  }
+  .import-drop:hover, .import-drop.drag { border-color: var(--red); background: rgba(192,33,42,0.06); }
+  html.tema-claro .import-drop { border-color: #d0bfa8; }
+  html.tema-claro .import-drop:hover, html.tema-claro .import-drop.drag { background: rgba(192,98,42,0.05); }
+  .import-drop-icon { font-size: 32px; margin-bottom: 8px; }
+  .import-drop p { font-size: 14px; color: var(--grey7); line-height: 1.5; }
+  html.tema-claro .import-drop p { color: #4a3f35; }
+  .import-drop p strong { color: var(--grey9); }
+  html.tema-claro .import-drop p strong { color: #1a1410; }
+  .import-mode { display: flex; gap: 8px; margin-bottom: 14px; }
+  .mode-btn {
+    flex: 1; padding: 9px; border-radius: 10px;
+    border: 1.5px solid var(--grey5); background: transparent;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    cursor: pointer; color: var(--grey7); transition: all 0.15s;
+  }
+  html.tema-claro .mode-btn { border-color: #d0bfa8; color: #4a3f35; }
+  .mode-btn.active { background: var(--red); color: white; border-color: var(--red); }
+
+  /* ══ DRIVE BANNER ══ */
+  .drive-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.3s;
+  }
+  html:not(.tema-claro) .drive-banner { background: #0f1f0f; color: #7ecf7e; border-bottom-color: #1a3a1a; }
+  html.tema-claro        .drive-banner { background: #f0faf0; color: #2a6a2a; border-bottom-color: #c8e6c8; }
+  .drive-banner.desconectado { }
+  html:not(.tema-claro) .drive-banner.desconectado { background: #1a1a1a; color: var(--grey7); }
+  html.tema-claro        .drive-banner.desconectado { background: #f5f0e8; color: #4a3f35; }
+  .drive-banner-icon { font-size: 18px; flex-shrink: 0; }
+  .drive-banner-text { flex: 1; line-height: 1.4; }
+  .drive-banner-text strong { display: block; font-size: 12px; }
+  .drive-banner-text span { font-size: 11px; opacity: 0.75; }
+  .btn-drive {
+    border: none; border-radius: 8px; padding: 7px 13px;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-drive.conectar { background: var(--red); color: white; }
+  .btn-drive.conectar:hover { background: var(--red-bright); }
+  .btn-drive.desconectar { background: var(--grey4); color: var(--grey7); }
+  .btn-drive.desconectar:hover { background: var(--grey5); }
+  html.tema-claro .btn-drive.desconectar { background: #e8d9c4; color: #4a3f35; }
+
+  @media (max-width: 500px) {
+    .temporadas-grid { grid-template-columns: 1fr; }
+    .destinos-grid { grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); }
+    .items-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+
+  /* ══ SAFARI BANNER ══ */
+  .safari-banner {
+    display: none;
+    background: #7a1018;
+    color: #ffd0d0;
+    padding: 10px 16px;
+    font-size: 13px;
+    gap: 10px;
+    align-items: center;
+    line-height: 1.4;
+    border-bottom: 1px solid #a01020;
+  }
+  .safari-banner strong { color: white; }
+  .safari-banner-close {
+    background: none; border: none; color: #ffd0d0;
+    font-size: 18px; cursor: pointer; margin-left: auto; flex-shrink: 0; padding: 0 4px;
+  }
+
+  /* ══ SAVE INDICATOR ══ */
+  .save-indicator {
+    font-size: 11px;
+    color: var(--grey7);
+    opacity: 0;
+    transition: opacity 0.4s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+  VISTA 1 — TEMPORADAS
+══════════════════════════════════════ -->
+
+<!-- ══ AUTH OVERLAY ══ -->
+<div id="auth-overlay" style="position:fixed;inset:0;background:var(--grey1);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:var(--grey9);">
+  <h2 style="font-family:'Playfair Display',serif;font-size:28px;">✈ Mi <span style="color:var(--red-bright);font-style:italic">Diario</span> de Viajes</h2>
+  <p style="color:var(--grey7);font-size:14px;">Sincronización automática con Google Drive</p>
+  <button onclick="handleAuthClick()" style="background:var(--red);color:white;border:none;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:'DM Sans',sans-serif;transition:background 0.2s;" onmouseover="this.style.background='var(--red-bright)'" onmouseout="this.style.background='var(--red)'">
+    ☁️ Conectar con Google Drive
+  </button>
+  <p style="color:var(--grey6);font-size:12px;max-width:300px;text-align:center;line-height:1.6">Tus datos se guardan en tu propio Drive.<br>Solo tú tienes acceso.</p>
+</div>
+
+<!-- ══ SAFARI WARNING BANNER ══ -->
+<div class="safari-banner" id="safari-banner">
+  <span>⚠️</span>
+  <span><strong>Safari puede borrar tus datos</strong> si no visitas el archivo durante 7 días. La app descargará una copia automática tras cada cambio. <strong>Guárdala en iCloud o Drive</strong> para no perder nada.</span>
+  <button class="safari-banner-close" onclick="document.getElementById('safari-banner').style.display='none'">✕</button>
+</div>
+<div class="vista activa" id="vista-temporadas">
+  <header>
+    <div style="width:4px"></div>
+    <div class="header-title-wrap">
+      <h1>✈ Mi <span>Diario</span> de Viajes</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn-add" onclick="abrirModalTemporada()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Temporada
+      </button>
+      <div class="menu-wrapper">
+        <button class="btn-menu" onclick="toggleMenu(event)">⋯</button>
+        <div class="dropdown" id="main-dropdown">
+          <button class="dropdown-item" onclick="exportarDatos()">
+            <span class="di-icon">📤</span>
+            <span>Exportar<span class="di-sub">Descarga un archivo .json</span></span>
+          </button>
+          <div class="dropdown-sep"></div>
+          <button class="dropdown-item" onclick="abrirModalImportar()">
+            <span class="di-icon">📥</span>
+            <span>Importar<span class="di-sub">Carga datos desde un archivo</span></span>
+          </button>
+          <div class="dropdown-sep"></div>
+          <button class="dropdown-item" onclick="copiaDeSeguridad()">
+            <span class="di-icon">💾</span>
+            <span>Copia de seguridad<span class="di-sub" id="save-date">Descarga JSON ahora</span></span>
+          </button>
+          <div class="dropdown-sep"></div>
+          <button class="dropdown-item" onclick="toggleTema()" id="btn-tema">
+            <span class="di-icon" id="tema-icon">☀️</span>
+            <span id="tema-label">Tema claro<span class="di-sub" id="tema-sub">Cambiar a tonos arena</span></span>
+          </button>
+        </div>
+
+    <span class="save-indicator" id="save-indicator"></span>
+      </div>
+    </div>
+  </header>
+  <!-- Banner estado Drive -->
+  <div class="drive-banner desconectado" id="drive-banner">
+    <span class="drive-banner-icon">☁️</span>
+    <div class="drive-banner-text">
+      <strong id="drive-banner-title">Sin sincronización</strong>
+      <span id="drive-banner-sub">Conecta Google Drive para guardar automáticamente</span>
+    </div>
+    <button class="btn-drive conectar" id="drive-btn" onclick="handleAuthClick()">Conectar Drive</button>
+  </div>
+  <div class="stats" id="stats-global"></div>
+  <div class="temporadas-grid" id="temporadas-grid"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+  VISTA 2 — DESTINOS DE UNA TEMPORADA
+══════════════════════════════════════ -->
+<div class="vista" id="vista-destinos">
+  <header>
+    <button class="btn-back" id="btn-back-temp" onclick="volverATemporadas()">←</button>
+    <div class="header-title-wrap">
+      <h1 id="temp-titulo">Temporada</h1>
+      <div class="breadcrumb" id="bread-temp" style="display:block">Inicio › <span id="bread-temp-name"></span></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-add" onclick="abrirModalDestino()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Destino
+      </button>
+    </div>
+  </header>
+  <div class="stats" id="stats-destinos"></div>
+  <label class="toggle-descartados-dest">
+    <input type="checkbox" id="show-dest-descartados" checked onchange="renderDestinos()">
+    Mostrar destinos descartados
+  </label>
+  <div class="destinos-grid" id="destinos-grid"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+  VISTA 3 — OPCIONES DE UN DESTINO
+══════════════════════════════════════ -->
+<div class="vista" id="vista-detalle">
+  <header>
+    <button class="btn-back" id="btn-back-dest" onclick="volverADestinos()">←</button>
+    <div class="header-title-wrap">
+      <h1 id="detalle-titulo">Destino</h1>
+      <div class="breadcrumb" id="bread-dest" style="display:block"><span id="bread-dest-temp"></span> › <span id="bread-dest-name"></span></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-add" onclick="abrirModalItem()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Añadir
+      </button>
+    </div>
+  </header>
+  <div class="filters" id="filtros-detalle">
+    <button class="filter-chip active" onclick="filtrarDetalle('todos',this)">Todos</button>
+    <button class="filter-chip" onclick="filtrarDetalle('favoritos',this)">⭐ Favs</button>
+    <button class="filter-chip" onclick="filtrarDetalle('vuelo',this)">✈ Vuelos</button>
+    <button class="filter-chip" onclick="filtrarDetalle('hotel',this)">🏨 Hoteles</button>
+    <button class="filter-chip" onclick="filtrarDetalle('actividad',this)">🎭 Actividades</button>
+    <button class="filter-chip" onclick="filtrarDetalle('transporte',this)">🚗 Transporte</button>
+    <button class="filter-chip" onclick="filtrarDetalle('general',this)">📌 General</button>
+  </div>
+  <div class="stats" id="stats-detalle"></div>
+  <label class="toggle-descartados">
+    <input type="checkbox" id="show-descartados" checked onchange="renderDetalle()">
+    Mostrar descartados
+  </label>
+  <div class="items-grid" id="items-grid"></div>
+</div>
+
+<!-- ══ MODAL: TEMPORADA ══ -->
+<div class="overlay" id="overlay-temporada" onclick="cerrarSiFondo(event,'overlay-temporada')">
+  <div class="modal modal-narrow">
+    <div class="modal-handle"></div>
+    <h2 id="temp-modal-h2">Nueva temporada</h2>
+    <div class="form-group">
+      <label>Nombre de la temporada</label>
+      <input type="text" id="t-nombre" placeholder="ej. Navidad 2025, Verano 2026…">
+    </div>
+    <div class="form-group">
+      <label>Elige un emoji</label>
+      <div class="emoji-picker" id="emoji-picker-temp"></div>
+      <input type="hidden" id="t-emoji" value="📅">
+    </div>
+    <div class="form-group">
+      <label>Notas (opcional)</label>
+      <textarea id="t-notas" placeholder="Fechas aproximadas, presupuesto, ideas…" style="min-height:65px"></textarea>
+    </div>
+    <button class="btn-guardar" onclick="guardarTemporada()">Guardar temporada</button>
+    <button class="btn-cancelar" onclick="cerrarOverlay('overlay-temporada')">Cancelar</button>
+  </div>
+</div>
+
+<!-- ══ MODAL: DESTINO ══ -->
+<div class="overlay" id="overlay-destino" onclick="cerrarSiFondo(event,'overlay-destino')">
+  <div class="modal modal-narrow">
+    <div class="modal-handle"></div>
+    <h2 id="dest-modal-h2">Nuevo destino</h2>
+    <div class="form-group">
+      <label>Nombre del destino</label>
+      <input type="text" id="d-nombre" placeholder="ej. Japón, Lisboa, Bali…">
+    </div>
+    <div class="form-group">
+      <label>Elige un emoji</label>
+      <div class="emoji-picker" id="emoji-picker-dest"></div>
+      <input type="hidden" id="d-emoji" value="🗺">
+    </div>
+    <div class="form-group">
+      <label>Notas (opcional)</label>
+      <textarea id="d-notas" placeholder="Idea inicial, por qué te interesa…" style="min-height:65px"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Estado</label>
+      <select id="d-estado">
+        <option value="activo">🔍 Activo</option>
+        <option value="descartado">❌ Descartado</option>
+      </select>
+    </div>
+    <button class="btn-guardar" onclick="guardarDestino()">Guardar destino</button>
+    <button class="btn-cancelar" onclick="cerrarOverlay('overlay-destino')">Cancelar</button>
+  </div>
+</div>
+
+<!-- ══ MODAL: ITEM ══ -->
+<div class="overlay" id="overlay-item" onclick="cerrarSiFondo(event,'overlay-item')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="item-modal-titulo">Nueva opción</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="f-tipo">
+          <option value="general">📌 General</option>
+          <option value="vuelo">✈ Vuelo</option>
+          <option value="hotel">🏨 Hotel</option>
+          <option value="actividad">🎭 Actividad</option>
+          <option value="transporte">🚗 Transporte</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="f-estado">
+          <option value="investigando">🔍 Investigando</option>
+          <option value="interesa">👍 Me interesa</option>
+          <option value="reservado">✅ Reservado</option>
+          <option value="descartado">❌ Descartado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Título / Nombre</label>
+      <input type="text" id="f-titulo" placeholder="ej. Vuelo MAD-NRT, Hotel Park Hyatt…">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Precio</label>
+        <input type="text" id="f-precio" placeholder="ej. 650 €">
+      </div>
+      <div class="form-group">
+        <label>Fechas</label>
+        <input type="text" id="f-fechas" placeholder="ej. 5–14 oct">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Valoración</label>
+        <select id="f-rating">
+          <option value="">Sin valorar</option>
+          <option value="1">⭐</option>
+          <option value="2">⭐⭐</option>
+          <option value="3">⭐⭐⭐</option>
+          <option value="4">⭐⭐⭐⭐</option>
+          <option value="5">⭐⭐⭐⭐⭐</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>URL / Enlace</label>
+        <input type="url" id="f-url" placeholder="https://…">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notas</label>
+      <textarea id="f-notas" placeholder="Pros, contras, condiciones…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Imagen</label>
+      <div id="imagen-preview-wrap" style="display:none;margin-bottom:10px;">
+        <img id="imagen-preview" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;"/>
+        <button type="button" onclick="eliminarImagenItem()" style="margin-top:6px;background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:13px;">🗑 Quitar imagen</button>
+      </div>
+      <div id="imagen-upload-wrap">
+        <input type="file" id="f-imagen" accept="image/*" style="display:none" onchange="previsualizarImagen(event)">
+        <button type="button" onclick="document.getElementById('f-imagen').click()" style="background:var(--grey4);border:1px dashed var(--border);color:var(--grey7);border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;width:100%;">📷 Subir imagen</button>
+      </div>
+      <div id="imagen-estado" style="font-size:12px;color:var(--grey7);margin-top:4px;"></div>
+    </div>
+    <button class="btn-guardar" onclick="guardarItem()">Guardar</button>
+    <button class="btn-cancelar" onclick="cerrarOverlay('overlay-item')">Cancelar</button>
+  </div>
+</div>
+
+<!-- ══ OVERLAY: VER IMAGEN ══ -->
+<div class="overlay" id="overlay-imagen-item" onclick="cerrarSiFondo(event,'overlay-imagen-item')" style="z-index:1100">
+  <div style="max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <img id="imagen-item-grande" style="max-width:90vw;max-height:80vh;border-radius:14px;object-fit:contain;background:var(--grey3);" src=""/>
+    <button onclick="cerrarOverlay('overlay-imagen-item')" style="background:var(--grey4);border:1px solid var(--border);color:var(--grey9);border-radius:10px;padding:8px 24px;cursor:pointer;font-size:15px;">Cerrar</button>
+  </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ MODAL: IMPORTAR ══ -->
+<div class="overlay" id="overlay-import" onclick="cerrarSiFondo(event,'overlay-import')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Importar datos</h2>
+    <div class="import-mode">
+      <button class="mode-btn active" id="mode-merge" onclick="setMode('merge',this)">🔀 Combinar</button>
+      <button class="mode-btn" id="mode-replace" onclick="setMode('replace',this)">♻️ Reemplazar</button>
+    </div>
+    <p style="font-size:12px;color:var(--grey7);margin-bottom:14px;line-height:1.5">
+      <strong style="color:var(--grey9)">Combinar</strong> añade lo nuevo sin borrar lo actual.
+      <strong style="color:var(--grey9)">Reemplazar</strong> borra todo y carga el archivo.
+    </p>
+    <div class="import-drop" id="import-drop"
+      onclick="document.getElementById('file-input').click()"
+      ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+      <div class="import-drop-icon">📂</div>
+      <p><strong>Pulsa aquí</strong> para seleccionar un archivo<br><span style="font-size:12px">o arrastra tu .json aquí</span></p>
+    </div>
+    <input type="file" id="file-input" accept=".json" style="display:none" onchange="leerArchivo(event)">
+    <button class="btn-cancelar" onclick="cerrarOverlay('overlay-import')">Cancelar</button>
+  </div>
+</div>
+
+<script>
+// ══ CLAVES ══
+const CLAVE_T = 'vj_temporadas_v1';
+const CLAVE_D = 'vj_destinos_v1';
+const CLAVE_I = 'vj_items_v1';
+const CLAVE_TEMA = 'vj_tema_v1';
+
+// ══ ESTADO ══
+let temporadas = JSON.parse(localStorage.getItem(CLAVE_T) || '[]');
+let destinos   = JSON.parse(localStorage.getItem(CLAVE_D) || '[]');
+let items      = JSON.parse(localStorage.getItem(CLAVE_I) || '[]');
+
+let temporadaActual = null;
+let destinoActual   = null;
+let editandoItemId  = null;
+let editandoDestId  = null;
+let editandoTempId  = null;
+let filtroDetalle   = 'todos';
+let menuOpen        = false;
+
+const TIPO_EMOJI   = { vuelo:'✈', hotel:'🏨', actividad:'🎭', transporte:'🚗', general:'📌' };
+const ESTADO_EMOJI = { investigando:'🔍', interesa:'👍', reservado:'✅', descartado:'❌' };
+
+const EMOJIS_TEMP = ['📅','🌟','❄️','🌸','☀️','🍂','🎄','🎃','🏖','🎿','🌺','🍃','🌙','🎆','🏕','🗓','✈','🎯','💼','🌍'];
+const EMOJIS_DEST = ['🗺','🌏','🌍','🌎','✈','🏝','🏔','🌊','🏜','🌋','🗼','🏯','🎌','🌸','🌺','🌴','🍜','🍣','🥘','🍷','🎭','🎪','🎿','🏄','🧳','🗽','🌃','🌄','🎑','🏕'];
+
+// ══ TEMA ══
+let temaClaro = localStorage.getItem(CLAVE_TEMA) === 'claro';
+function aplicarTema() {
+  document.documentElement.classList.toggle('tema-claro', temaClaro);
+  const icon  = document.getElementById('tema-icon');
+  const label = document.getElementById('tema-label');
+  const sub   = document.getElementById('tema-sub');
+  if (icon)  icon.textContent = temaClaro ? '🌙' : '☀️';
+  if (sub)   sub.textContent  = temaClaro ? 'Cambiar a oscuro' : 'Cambiar a tonos arena';
+  if (label) label.firstChild.textContent = temaClaro ? 'Tema oscuro' : 'Tema claro';
+}
+function toggleTema() {
+  temaClaro = !temaClaro;
+  localStorage.setItem(CLAVE_TEMA, temaClaro ? 'claro' : 'oscuro');
+  aplicarTema();
+  cerrarMenu();
+  toast(temaClaro ? '☀️ Tema claro activado' : '🌙 Tema oscuro activado');
+}
+aplicarTema();
+
+// ══ PERSISTENCIA ══
+let _autoguardadoTimer = null;
+
+let _hayambiosSinExportar = false;
+
+function guardarTodo() {
+  localStorage.setItem(CLAVE_T, JSON.stringify(temporadas));
+  localStorage.setItem(CLAVE_D, JSON.stringify(destinos));
+  localStorage.setItem(CLAVE_I, JSON.stringify(items));
+  localStorage.setItem('vj_ultimo_guardado', Date.now().toString());
+  _hayambiosSinExportar = true;
+  actualizarIndicador('guardando');
+  clearTimeout(_autoguardadoTimer);
+  _autoguardadoTimer = setTimeout(() => autoguardarJSON(), 4000);
+}
+
+window.addEventListener('beforeunload', (e) => {
+  if (_hayambiosSinExportar) {
+    e.preventDefault();
+    e.returnValue = '¿Seguro? Tienes cambios sin exportar. Exporta el JSON antes de cerrar para no perder datos.';
+    return e.returnValue;
+  }
+});
+
+function generarJSON() {
+  return JSON.stringify({ version:3, exportado:new Date().toISOString(), temporadas, destinos, items }, null, 2);
+}
+
+// ══ GOOGLE DRIVE OAuth (patrón gapi + gsi idéntico al index.html) ══
+const CLIENT_ID  = '940633332310-8jvdkccdfeedcbna2sl928bpk3lfe2k1.apps.googleusercontent.com';
+const SCOPES     = 'https://www.googleapis.com/auth/drive.file';
+const FILE_NAME  = 'viajes_backup.json';
+const SHARED_FILE_ID = '1zSlW8dw_5-8A7siAdrFgwR0Y-zsV56VW'; // archivo de Maria
+
+let gapiInited  = false;
+let gisInited   = false;
+let tokenClient;
+let driveFileId = null;
+let _syncEnCurso = false;
+
+// ── Init idéntico al index.html ───────────────────────────────────────────
+function gapiLoaded() { gapi.load('client', initializeGapiClient); }
+async function initializeGapiClient() {
+  await gapi.client.init({
+    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+  });
+  gapiInited = true;
+}
+function gisLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp) => {
+      if (resp.error !== undefined) throw resp;
+      document.getElementById('auth-overlay').style.display = 'none';
+      await startDriveApp();
+    }
+  });
+  gisInited = true;
+}
+
+function handleAuthClick() {
+  if (!tokenClient) {
+    setTimeout(handleAuthClick, 300);
+    return;
+  }
+  tokenClient.requestAccessToken({ prompt: 'select_account consent' });
+}
+
+// ── startApp: busca o crea el archivo en Drive ────────────────────────────
+async function esperarGapi() {
+  if (gapiInited) return;
+  return new Promise(resolve => {
+    const t = setInterval(() => { if (gapiInited) { clearInterval(t); resolve(); } }, 100);
+  });
+}
+
+async function startDriveApp() {
+  try {
+    actualizarBannerDrive('saving', 'Conectando con Drive...');
+    await esperarGapi();
+    // Modo compartido: usar siempre el archivo de Maria directamente
+    driveFileId = SHARED_FILE_ID;
+    await cargarDesdeDrive();
+    actualizarBannerDrive('sync', 'Sincronizado · Viajes de Maria');
+  } catch(err) {
+    console.error(err);
+    actualizarBannerDrive('error', 'Error de conexión');
+  }
+}
+
+async function crearArchivoDrive() {
+  const metadata = { name: FILE_NAME, mimeType: 'application/json' };
+  const resp = await gapi.client.drive.files.create({ resource: metadata, fields: 'id' });
+  driveFileId = resp.result.id;
+  await subirADrive(); // subir estado actual
+}
+
+// ── Desconectar ───────────────────────────────────────────────────────────
+function desconectarDrive() {
+  const token = gapi.client.getToken();
+  if (token) google.accounts.oauth2.revoke(token.access_token, () => {});
+  gapi.client.setToken('');
+  actualizarBannerDrive('off', 'Sin sincronización');
+  toast('🔌 Drive desconectado');
+}
+
+// ── Banner estado ─────────────────────────────────────────────────────────
+function actualizarBannerDrive(estado, texto) {
+  const banner = document.getElementById('drive-banner');
+  const title  = document.getElementById('drive-banner-title');
+  const sub    = document.getElementById('drive-banner-sub');
+  const btn    = document.getElementById('drive-btn');
+  if (!banner) return;
+
+  const dot = banner.querySelector('.drive-dot') || (() => {
+    const d = document.createElement('span');
+    d.className = 'drive-dot';
+    d.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;';
+    banner.insertBefore(d, banner.firstChild.nextSibling);
+    return d;
+  })();
+
+  if (estado === 'sync') {
+    banner.classList.remove('desconectado');
+    dot.style.background = '#00b37e';
+    title.textContent = '☁️ ' + (texto || 'Sincronizado con Drive');
+    const ts = localStorage.getItem('vj_drive_sync');
+    sub.textContent = ts ? 'Última sync: ' + new Date(parseInt(ts)).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : 'Todo guardado';
+    btn.textContent = 'Desconectar';
+    btn.className = 'btn-drive desconectar';
+    btn.onclick = desconectarDrive;
+  } else if (estado === 'saving') {
+    dot.style.background = '#e1b12c';
+    title.textContent = '⏳ ' + (texto || 'Sincronizando...');
+    sub.textContent = '';
+  } else {
+    banner.classList.add('desconectado');
+    dot.style.background = '#555';
+    title.textContent = texto || 'Sin sincronización con Drive';
+    sub.textContent = 'Conecta para guardar en la nube';
+    btn.textContent = 'Conectar Drive';
+    btn.className = 'btn-drive conectar';
+    btn.onclick = handleAuthClick;
+  }
+}
+
+// ── Guardar en Drive ──────────────────────────────────────────────────────
+async function subirADrive() {
+  if (!driveFileId) return;
+  const token = gapi.client.getToken();
+  await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=media',
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + token.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: generarJSON()
+    }
+  );
+  localStorage.setItem('vj_drive_sync', Date.now().toString());
+}
+
+async function autoguardarJSON() {
+  const token = gapi.client && gapi.client.getToken();
+  if (!token || !driveFileId) { actualizarIndicador('guardado'); actualizarFechaGuardado(); return; }
+  if (_syncEnCurso) return;
+  _syncEnCurso = true;
+  actualizarBannerDrive('saving', 'Guardando...');
+  try {
+    await subirADrive();
+    actualizarBannerDrive('sync');
+  } catch(e) {
+    console.warn('Drive sync error:', e);
+    actualizarBannerDrive('error', 'Error al guardar');
+  } finally {
+    _syncEnCurso = false;
+    actualizarIndicador('guardado');
+    actualizarFechaGuardado();
+  }
+}
+
+// ── Cargar desde Drive ────────────────────────────────────────────────────
+async function cargarDesdeDrive() {
+  const res = await gapi.client.drive.files.get({ fileId: driveFileId, alt: 'media' });
+
+  // gapi con alt:media puede devolver el contenido en res.result (objeto o string)
+  // o en res.body (string) según el navegador. Probamos ambos.
+  let data = res.result;
+  const esVacio = !data || (typeof data === 'object' && Object.keys(data).length === 0);
+  if (esVacio && res.body) {
+    try { data = JSON.parse(res.body); } catch(e) {
+      console.error('Error parseando res.body de Drive:', e);
+      actualizarBannerDrive('error', 'Error al leer datos de Drive');
+      return;
+    }
+  } else if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch(e) {
+      console.error('Error parseando res.result de Drive:', e);
+      actualizarBannerDrive('error', 'Error al leer datos de Drive');
+      return;
+    }
+  }
+
+  if (data && data.version >= 3 && Array.isArray(data.temporadas)) {
+    temporadas = data.temporadas || [];
+    destinos   = data.destinos   || [];
+    items      = data.items      || [];
+    localStorage.setItem(CLAVE_T, JSON.stringify(temporadas));
+    localStorage.setItem(CLAVE_D, JSON.stringify(destinos));
+    localStorage.setItem(CLAVE_I, JSON.stringify(items));
+    renderTemporadas();
+    toast('☁️ Datos cargados desde Drive');
+  } else if (!data || (Array.isArray(data.temporadas) && data.temporadas.length === 0
+             && destinos.length === 0 && items.length === 0)) {
+    // Drive vacío y local también vacío → primer uso, subir estado inicial
+    await subirADrive();
+  }
+  // En cualquier otro caso (datos locales presentes, Drive sin datos legibles)
+  // no tocamos Drive para no machacar datos
+}
+
+function copiaDeSeguridad() {
+  cerrarMenu();
+  const blob = new Blob([generarJSON()], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'viajes_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  _hayambiosSinExportar = false;
+  toast('💾 Copia de seguridad descargada');
+  actualizarFechaGuardado();
+}
+
+function actualizarIndicador(estado) {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  if (estado === 'guardando') { el.textContent = '⏳ Guardando…'; el.style.opacity = '0.7'; }
+  else { el.textContent = '✓ Guardado'; el.style.opacity = '0.5'; setTimeout(()=>{ el.style.opacity='0'; }, 2000); }
+}
+
+function actualizarFechaGuardado() {
+  const el = document.getElementById('save-date');
+  if (!el) return;
+  const ts = localStorage.getItem('vj_ultimo_guardado');
+  if (!ts) return;
+  const d = new Date(parseInt(ts));
+  el.textContent = 'Última copia: ' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) + ' ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+}
+
+function mostrarAviseSafari() {
+  const esSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (!esSafari) return;
+  const banner = document.getElementById('safari-banner');
+  if (banner) banner.style.display = 'flex';
+}
+
+// ══ NAVEGACIÓN ══
+function irATemporada(id) {
+  temporadaActual = id;
+  destinoActual   = null;
+  const t = temporadas.find(t=>t.id===id);
+  document.getElementById('temp-titulo').textContent = t.emoji + ' ' + t.nombre;
+  document.getElementById('bread-temp-name').textContent = t.nombre;
+  document.getElementById('btn-back-temp').style.display = 'block';
+  mostrarVista('vista-destinos');
+  renderDestinos();
+}
+function volverATemporadas() {
+  temporadaActual = null;
+  mostrarVista('vista-temporadas');
+  renderTemporadas();
+}
+function irADestino(id) {
+  destinoActual = id;
+  filtroDetalle = 'todos';
+  document.querySelectorAll('#filtros-detalle .filter-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+  const dest = destinos.find(d=>d.id===id);
+  const temp = temporadas.find(t=>t.id===temporadaActual);
+  document.getElementById('detalle-titulo').textContent = dest.emoji + ' ' + dest.nombre;
+  document.getElementById('bread-dest-temp').textContent = temp ? temp.nombre : '';
+  document.getElementById('bread-dest-name').textContent = dest.nombre;
+  document.getElementById('btn-back-dest').style.display = 'block';
+  mostrarVista('vista-detalle');
+  renderDetalle();
+}
+function volverADestinos() {
+  destinoActual = null;
+  mostrarVista('vista-destinos');
+  renderDestinos();
+}
+function mostrarVista(id) {
+  document.querySelectorAll('.vista').forEach(v=>v.classList.remove('activa'));
+  document.getElementById(id).classList.add('activa');
+  window.scrollTo(0,0);
+}
+
+// ══ MODAL TEMPORADA ══
+const EMOJIS_TEMP_DEFAULT = '📅';
+function abrirModalTemporada(id) {
+  editandoTempId = id || null;
+  const h2 = document.getElementById('temp-modal-h2');
+  buildEmojiPicker('emoji-picker-temp', EMOJIS_TEMP, 't-emoji', EMOJIS_TEMP_DEFAULT);
+  if (id) {
+    const t = temporadas.find(t=>t.id===id);
+    h2.textContent = 'Editar temporada';
+    document.getElementById('t-nombre').value = t.nombre;
+    document.getElementById('t-notas').value  = t.notas || '';
+    document.getElementById('t-emoji').value  = t.emoji;
+    selectEmojiInPicker('emoji-picker-temp', t.emoji);
+  } else {
+    h2.textContent = 'Nueva temporada';
+    document.getElementById('t-nombre').value = '';
+    document.getElementById('t-notas').value  = '';
+    document.getElementById('t-emoji').value  = EMOJIS_TEMP_DEFAULT;
+  }
+  document.getElementById('overlay-temporada').classList.add('open');
+  setTimeout(()=>document.getElementById('t-nombre').focus(),100);
+}
+function guardarTemporada() {
+  const nombre = document.getElementById('t-nombre').value.trim();
+  if (!nombre) { alert('Escribe un nombre para la temporada'); return; }
+  const obj = {
+    id: editandoTempId || Date.now(),
+    nombre,
+    emoji: document.getElementById('t-emoji').value || EMOJIS_TEMP_DEFAULT,
+    notas: document.getElementById('t-notas').value.trim(),
+    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})
+  };
+  if (editandoTempId) temporadas = temporadas.map(t=>t.id===editandoTempId?obj:t);
+  else temporadas.unshift(obj);
+  guardarTodo();
+  cerrarOverlay('overlay-temporada');
+  renderTemporadas();
+}
+function eliminarTemporada(id, e) {
+  e.stopPropagation();
+  const t  = temporadas.find(t=>t.id===id);
+  const ds = destinos.filter(d=>d.temporadaId===id);
+  const is = items.filter(i=>ds.some(d=>d.id===i.destinoId));
+  if (!confirm(`¿Eliminar "${t.nombre}"${ds.length?` con ${ds.length} destinos y ${is.length} opciones`:''}?`)) return;
+  temporadas = temporadas.filter(t=>t.id!==id);
+  const dIds = ds.map(d=>d.id);
+  destinos = destinos.filter(d=>d.temporadaId!==id);
+  items    = items.filter(i=>!dIds.includes(i.destinoId));
+  guardarTodo();
+  renderTemporadas();
+}
+
+// ══ MODAL DESTINO ══
+function abrirModalDestino(id) {
+  editandoDestId = id || null;
+  const h2 = document.getElementById('dest-modal-h2');
+  buildEmojiPicker('emoji-picker-dest', EMOJIS_DEST, 'd-emoji', '🗺');
+  if (id) {
+    const d = destinos.find(d=>d.id===id);
+    h2.textContent = 'Editar destino';
+    document.getElementById('d-nombre').value = d.nombre;
+    document.getElementById('d-notas').value  = d.notas || '';
+    document.getElementById('d-emoji').value  = d.emoji;
+    document.getElementById('d-estado').value = d.estado || 'activo';
+    selectEmojiInPicker('emoji-picker-dest', d.emoji);
+  } else {
+    h2.textContent = 'Nuevo destino';
+    document.getElementById('d-nombre').value = '';
+    document.getElementById('d-notas').value  = '';
+    document.getElementById('d-emoji').value  = '🗺';
+    document.getElementById('d-estado').value = 'activo';
+  }
+  document.getElementById('overlay-destino').classList.add('open');
+  setTimeout(()=>document.getElementById('d-nombre').focus(),100);
+}
+function guardarDestino() {
+  const nombre = document.getElementById('d-nombre').value.trim();
+  if (!nombre) { alert('Escribe un nombre para el destino'); return; }
+  const obj = {
+    id: editandoDestId || Date.now(),
+    temporadaId: temporadaActual,
+    nombre,
+    emoji: document.getElementById('d-emoji').value || '🗺',
+    notas: document.getElementById('d-notas').value.trim(),
+    estado: document.getElementById('d-estado').value || 'activo',
+    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})
+  };
+  if (editandoDestId) destinos = destinos.map(d=>d.id===editandoDestId?obj:d);
+  else destinos.unshift(obj);
+  guardarTodo();
+  cerrarOverlay('overlay-destino');
+  renderDestinos();
+}
+function toggleDescartadoDest(id, e) {
+  e.stopPropagation();
+  destinos = destinos.map(d => d.id===id ? {...d, estado: d.estado==='descartado'?'activo':'descartado'} : d);
+  guardarTodo();
+  renderDestinos();
+}
+
+function eliminarDestino(id, e) {
+  e.stopPropagation();
+  const d = destinos.find(d=>d.id===id);
+  const n = items.filter(i=>i.destinoId===id).length;
+  if (!confirm(`¿Eliminar "${d.nombre}"${n?` y sus ${n} opcion${n===1?'':'es'}`:''}?`)) return;
+  destinos = destinos.filter(d=>d.id!==id);
+  items    = items.filter(i=>i.destinoId!==id);
+  guardarTodo();
+  renderDestinos();
+}
+
+// ══ MODAL ITEM ══
+function abrirModalItem(id) {
+  editandoItemId = id || null;
+  _imagenPendiente = null; // reset imagen pendiente
+  const titulo = document.getElementById('item-modal-titulo');
+  if (id) {
+    const it = items.find(i=>i.id===id);
+    titulo.textContent = 'Editar opción';
+    document.getElementById('f-tipo').value   = it.tipo || 'general';
+    document.getElementById('f-estado').value = it.estado || 'investigando';
+    document.getElementById('f-titulo').value = it.titulo || '';
+    document.getElementById('f-precio').value = it.precio || '';
+    document.getElementById('f-fechas').value = it.fechas || '';
+    document.getElementById('f-rating').value = it.rating || '';
+    document.getElementById('f-url').value    = it.url || '';
+    document.getElementById('f-notas').value  = it.notas || '';
+    // imagen existente
+    if (it.imagenId) {
+      _imagenExistenteId = it.imagenId;
+      cargarImagenPreview(it.imagenId);
+    } else {
+      _imagenExistenteId = null;
+      resetImagenUI();
+    }
+  } else {
+    titulo.textContent = 'Nueva opción';
+    ['f-titulo','f-precio','f-fechas','f-url','f-notas'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('f-tipo').value   = 'general';
+    document.getElementById('f-estado').value = 'investigando';
+    document.getElementById('f-rating').value = '';
+    _imagenExistenteId = null;
+    resetImagenUI();
+  }
+  document.getElementById('f-imagen').value = '';
+  document.getElementById('overlay-item').classList.add('open');
+}
+async function guardarItem() {
+  const titulo = document.getElementById('f-titulo').value.trim();
+  if (!titulo) { alert('Escribe un título para esta opción'); return; }
+
+  // Subir imagen si hay una pendiente
+  let imagenId = _imagenExistenteId || null;
+  if (_imagenPendiente) {
+    const token = gapi.client && gapi.client.getToken();
+    if (!token) {
+      alert('Conéctate a Drive primero para poder guardar la imagen.');
+      return;
+    }
+    document.getElementById('imagen-estado').textContent = '⏳ Subiendo imagen…';
+    try {
+      imagenId = await subirImagenADrive(_imagenPendiente);
+      document.getElementById('imagen-estado').textContent = '✅ Imagen guardada';
+    } catch(e) {
+      document.getElementById('imagen-estado').textContent = '❌ Error al subir imagen';
+      console.error(e);
+      return;
+    }
+  }
+
+  const it = {
+    id: editandoItemId || Date.now(),
+    destinoId: destinoActual,
+    tipo:   document.getElementById('f-tipo').value,
+    estado: document.getElementById('f-estado').value,
+    titulo,
+    precio: document.getElementById('f-precio').value.trim(),
+    fechas: document.getElementById('f-fechas').value.trim(),
+    rating: document.getElementById('f-rating').value,
+    url:    document.getElementById('f-url').value.trim(),
+    notas:  document.getElementById('f-notas').value.trim(),
+    favorito: editandoItemId ? (items.find(i=>i.id===editandoItemId)?.favorito||false) : false,
+    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}),
+    imagenId: imagenId || undefined
+  };
+  if (editandoItemId) items = items.map(i=>i.id===editandoItemId?it:i);
+  else items.unshift(it);
+  guardarTodo();
+  cerrarOverlay('overlay-item');
+  renderDetalle();
+}
+// ══ IMAGEN EN ITEMS ══
+let _imagenPendiente  = null; // File object pendiente de subir
+let _imagenExistenteId = null; // Drive fileId ya guardado
+
+function resetImagenUI() {
+  _imagenPendiente = null;
+  document.getElementById('imagen-preview-wrap').style.display = 'none';
+  document.getElementById('imagen-upload-wrap').style.display = 'block';
+  document.getElementById('imagen-estado').textContent = '';
+}
+
+function previsualizarImagen(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  _imagenPendiente = file;
+  _imagenExistenteId = null;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('imagen-preview').src = e.target.result;
+    document.getElementById('imagen-preview-wrap').style.display = 'block';
+    document.getElementById('imagen-upload-wrap').style.display = 'none';
+    document.getElementById('imagen-estado').textContent = '📷 Lista para guardar con el item';
+  };
+  reader.readAsDataURL(file);
+}
+
+function eliminarImagenItem() {
+  _imagenPendiente = null;
+  _imagenExistenteId = null;
+  resetImagenUI();
+}
+
+async function cargarImagenPreview(fileId) {
+  const token = gapi.client && gapi.client.getToken();
+  if (!token) {
+    document.getElementById('imagen-estado').textContent = '⚠️ Conéctate a Drive para ver la imagen';
+    return;
+  }
+  try {
+    const resp = await gapi.client.drive.files.get({ fileId, alt: 'media' });
+    // Convertir respuesta a blob/URL
+    const bytes = resp.body;
+    const byteArr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) byteArr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([byteArr], { type: 'image/jpeg' });
+    const url = URL.createObjectURL(blob);
+    document.getElementById('imagen-preview').src = url;
+    document.getElementById('imagen-preview-wrap').style.display = 'block';
+    document.getElementById('imagen-upload-wrap').style.display = 'none';
+  } catch(e) {
+    document.getElementById('imagen-estado').textContent = '❌ No se pudo cargar la imagen';
+  }
+}
+
+async function subirImagenADrive(file) {
+  const token = gapi.client.getToken();
+  // 1. Buscar o crear carpeta
+  const folderName = 'imagenes-viajes-investigados';
+  let folderId;
+  const folderSearch = await gapi.client.drive.files.list({
+    q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: 'files(id)'
+  });
+  if (folderSearch.result.files && folderSearch.result.files.length > 0) {
+    folderId = folderSearch.result.files[0].id;
+  } else {
+    const folderResp = await gapi.client.drive.files.create({
+      resource: { name: folderName, mimeType: 'application/vnd.google-apps.folder' },
+      fields: 'id'
+    });
+    folderId = folderResp.result.id;
+  }
+  // 2. Subir imagen con multipart
+  const metadata = { name: file.name, parents: [folderId] };
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const boundary = '-------viajesupload';
+  const body = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${file.type}\r\nContent-Transfer-Encoding: base64\r\n\r\n${base64}\r\n--${boundary}--`;
+  const resp = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token.access_token,
+        'Content-Type': `multipart/related; boundary="${boundary}"`
+      },
+      body
+    }
+  );
+  const data = await resp.json();
+  if (!data.id) throw new Error('No se obtuvo ID del archivo subido');
+  return data.id;
+}
+
+function abrirImagenItem(fileId) {
+  // Abrir imagen en overlay
+  const overlay = document.getElementById('overlay-imagen-item');
+  const img = document.getElementById('imagen-item-grande');
+  overlay.classList.add('open');
+  img.src = '';
+  const token = gapi.client && gapi.client.getToken();
+  if (!token) { toast('Conéctate a Drive para ver la imagen'); cerrarOverlay('overlay-imagen-item'); return; }
+  gapi.client.drive.files.get({ fileId, alt: 'media' }).then(resp => {
+    const bytes = resp.body;
+    const byteArr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) byteArr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([byteArr], { type: 'image/jpeg' });
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
+
+function toggleDescartadoItem(id) {
+  items = items.map(i => i.id===id ? {...i, estado: i.estado==='descartado'?'investigando':'descartado'} : i);
+  guardarTodo();
+  renderDetalle();
+}
+
+function eliminarItem(id) {
+  if (!confirm('¿Eliminar esta opción?')) return;
+  items = items.filter(i=>i.id!==id);
+  guardarTodo();
+  renderDetalle();
+}
+function clonarItem(id) {
+  const it = items.find(i=>i.id===id);
+  if (!it) return;
+  const clon = { ...it, id: Date.now(), titulo: '(Copia) ' + it.titulo, favorito: false,
+    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) };
+  const idx = items.findIndex(i=>i.id===id);
+  items.splice(idx+1, 0, clon);
+  guardarTodo();
+  renderDetalle();
+  toast('📋 Opción clonada');
+}
+
+function toggleFav(id) {
+  items = items.map(i=>i.id===id?{...i,favorito:!i.favorito}:i);
+  guardarTodo();
+  renderDetalle();
+}
+
+// ══ FILTRO ══
+function filtrarDetalle(f, btn) {
+  filtroDetalle = f;
+  document.querySelectorAll('#filtros-detalle .filter-chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  renderDetalle();
+}
+
+// ══ EMOJI PICKER ══
+function buildEmojiPicker(pickerId, lista, hiddenId, def) {
+  const picker = document.getElementById(pickerId);
+  picker.innerHTML = lista.map(e=>
+    `<span class="emoji-opt${e===def?' sel':''}" onclick="selEmoji(this,'${e}','${hiddenId}','${pickerId}')">${e}</span>`
+  ).join('');
+  document.getElementById(hiddenId).value = def;
+}
+function selEmoji(el, emoji, hiddenId, pickerId) {
+  document.querySelectorAll(`#${pickerId} .emoji-opt`).forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById(hiddenId).value = emoji;
+}
+function selectEmojiInPicker(pickerId, emoji) {
+  document.querySelectorAll(`#${pickerId} .emoji-opt`).forEach(el=>{
+    el.classList.toggle('sel', el.textContent===emoji);
+  });
+}
+
+// ══ HELPERS ══
+function cerrarOverlay(id) { document.getElementById(id).classList.remove('open'); }
+function cerrarSiFondo(e, id) { if (e.target===document.getElementById(id)) cerrarOverlay(id); }
+function cerrarMenu() { menuOpen=false; document.getElementById('main-dropdown').classList.remove('open'); }
+
+// ══ MENÚ ══
+function toggleMenu(e) {
+  e.stopPropagation();
+  menuOpen = !menuOpen;
+  document.getElementById('main-dropdown').classList.toggle('open', menuOpen);
+}
+document.addEventListener('click', () => {
+  menuOpen = false;
+  const d = document.getElementById('main-dropdown');
+  if (d) d.classList.remove('open');
+});
+
+// ══ TOAST ══
+function toast(msg, dur=2600) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+// ══ EXPORTAR ══
+function exportarDatos() {
+  cerrarMenu();
+  const payload = { version: 3, exportado: new Date().toISOString(), temporadas, destinos, items };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `viajes_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  _hayambiosSinExportar = false;
+  toast('✅ Datos exportados correctamente');
+}
+
+// ══ IMPORTAR ══
+let modoImport = 'merge';
+function setMode(modo, btn) {
+  modoImport = modo;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function abrirModalImportar() {
+  cerrarMenu();
+  modoImport = 'merge';
+  document.getElementById('mode-merge').classList.add('active');
+  document.getElementById('mode-replace').classList.remove('active');
+  document.getElementById('file-input').value = '';
+  document.getElementById('overlay-import').classList.add('open');
+}
+function dragOver(e) { e.preventDefault(); document.getElementById('import-drop').classList.add('drag'); }
+function dragLeave()  { document.getElementById('import-drop').classList.remove('drag'); }
+function dropFile(e)  { e.preventDefault(); dragLeave(); const f=e.dataTransfer.files[0]; if(f) procesarArchivo(f); }
+function leerArchivo(e){ const f=e.target.files[0]; if(f) procesarArchivo(f); }
+function procesarArchivo(file) {
+  if (!file.name.endsWith('.json')) { toast('⚠️ Solo se aceptan archivos .json'); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      let newTemp=[], newDest=[], newItems=[];
+
+      if (data.version === 3) {
+        newTemp  = data.temporadas || [];
+        newDest  = data.destinos   || [];
+        newItems = data.items      || [];
+      } else if (data.version === 2) {
+        // migrar de v2 (sin temporadas): crear una temporada genérica
+        const tempId = Date.now();
+        newTemp = [{ id: tempId, nombre: 'Importado', emoji: '📅', notas: '', fecha: new Date().toLocaleDateString('es-ES') }];
+        newDest  = (data.destinos||[]).map(d=>({...d, temporadaId: tempId}));
+        newItems = data.items || [];
+      } else if (Array.isArray(data)) {
+        const tempId = Date.now();
+        newTemp = [{ id: tempId, nombre: 'Importado', emoji: '📅', notas: '', fecha: new Date().toLocaleDateString('es-ES') }];
+        const grupos = [...new Set(data.map(v=>v.destino))];
+        grupos.forEach(nombre => {
+          const id = Date.now() + Math.random();
+          newDest.push({ id, temporadaId: tempId, nombre, emoji:'🗺', notas:'', fecha: new Date().toLocaleDateString('es-ES') });
+          data.filter(v=>v.destino===nombre).forEach(v => newItems.push({...v, destinoId: id}));
+        });
+      } else { toast('⚠️ Formato no reconocido'); return; }
+
+      if (modoImport === 'replace') {
+        if (!confirm(`¿Reemplazar TODOS los datos con los del archivo?`)) return;
+        temporadas = newTemp; destinos = newDest; items = newItems;
+      } else {
+        const tempNombres = new Set(temporadas.map(t=>t.nombre.toLowerCase()));
+        const mapaT = {};
+        newTemp.forEach(nt => {
+          if (!tempNombres.has(nt.nombre.toLowerCase())) {
+            const nid = Date.now() + Math.random();
+            mapaT[nt.id] = nid;
+            temporadas.unshift({...nt, id:nid});
+          } else {
+            const ex = temporadas.find(t=>t.nombre.toLowerCase()===nt.nombre.toLowerCase());
+            mapaT[nt.id] = ex.id;
+          }
+        });
+        const destIds = new Set(destinos.map(d=>d.id));
+        newDest.forEach(nd => {
+          if (!destIds.has(nd.id)) destinos.unshift({...nd, temporadaId: mapaT[nd.temporadaId]||nd.temporadaId});
+        });
+        const itemIds = new Set(items.map(i=>i.id));
+        newItems.forEach(ni => { if (!itemIds.has(ni.id)) items.unshift(ni); });
+      }
+
+      guardarTodo();
+      cerrarOverlay('overlay-import');
+      mostrarVista('vista-temporadas');
+      renderTemporadas();
+      toast(`✅ ${newTemp.length} temporada${newTemp.length===1?'':'s'} importada${newTemp.length===1?'':'s'}`);
+    } catch { toast('⚠️ Error al leer el archivo'); }
+  };
+  reader.readAsText(file);
+}
+
+// ══ RENDER TEMPORADAS ══
+function renderTemporadas() {
+  const grid  = document.getElementById('temporadas-grid');
+  const stats = document.getElementById('stats-global');
+
+  const totalDest  = destinos.length;
+  const totalItems = items.length;
+  const totalFavs  = items.filter(i=>i.favorito).length;
+  const reservados = items.filter(i=>i.estado==='reservado').length;
+  stats.innerHTML = `
+    <div class="stat-card"><div class="num">${temporadas.length}</div><div class="label">Temporadas</div></div>
+    <div class="stat-card"><div class="num">${totalDest}</div><div class="label">Destinos</div></div>
+    <div class="stat-card"><div class="num">${totalItems}</div><div class="label">Opciones</div></div>
+    <div class="stat-card"><div class="num">${reservados}</div><div class="label">Reservados</div></div>
+  `;
+
+  if (!temporadas.length) {
+    grid.innerHTML = `<div class="empty">
+      <div class="empty-icon">📅</div>
+      <h3>Aún no tienes temporadas</h3>
+      <p>Crea una temporada (Navidad, Verano, Escapada de otoño…) para empezar a organizar tus viajes.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = temporadas.map(t => {
+    const tDests = destinos.filter(d=>d.temporadaId===t.id);
+    const tItems = items.filter(i=>tDests.some(d=>d.id===i.destinoId));
+    const favs   = tItems.filter(i=>i.favorito).length;
+    const res    = tItems.filter(i=>i.estado==='reservado').length;
+
+    const destChips = tDests.slice(0,4).map(d =>
+      `<span class="temp-dest-chip" onclick="event.stopPropagation();irATemporada(${t.id});setTimeout(()=>irADestino(${d.id}),50)">
+        <span class="temp-dest-chip-emoji">${d.emoji}</span>${d.nombre}
+      </span>`
+    ).join('');
+    const masChip = tDests.length > 4 ? `<span class="temp-dest-chip">+${tDests.length-4} más</span>` : '';
+
+    return `<div class="temp-card" onclick="irATemporada(${t.id})">
+      <div class="temp-card-header">
+        <div class="temp-emoji-wrap">
+          <span class="temp-emoji">${t.emoji}</span>
+          <div class="temp-nombre">${t.nombre}</div>
+        </div>
+        <div style="display:flex;gap:2px;flex-shrink:0">
+          <button class="temp-edit-btn" onclick="abrirModalTemporada(${t.id});event.stopPropagation()" title="Editar">✏️</button>
+          <button class="temp-del-btn"  onclick="eliminarTemporada(${t.id},event)" title="Eliminar">🗑</button>
+        </div>
+      </div>
+      ${t.notas ? `<div class="temp-notas">${t.notas.replace(/</g,'&lt;')}</div>` : ''}
+      ${tDests.length ? `<div class="temp-destinos-row">${destChips}${masChip}</div>` : ''}
+      <div class="temp-footer">
+        <div class="temp-stats-mini">
+          <div class="temp-stat"><strong>${tDests.length}</strong> destino${tDests.length===1?'':'s'}</div>
+          <div class="temp-stat"><strong>${tItems.length}</strong> opciones</div>
+          ${res ? `<div class="temp-stat"><strong>${res}</strong> reservado${res===1?'':'s'}</div>` : ''}
+          ${favs ? `<div class="temp-stat">⭐ ${favs}</div>` : ''}
+        </div>
+        <div class="temp-open-btn">Ver →</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══ RENDER DESTINOS ══
+function renderDestinos() {
+  const grid  = document.getElementById('destinos-grid');
+  const stats = document.getElementById('stats-destinos');
+  const lista = destinos.filter(d=>d.temporadaId===temporadaActual);
+  const its   = items.filter(i=>lista.some(d=>d.id===i.destinoId));
+
+  stats.innerHTML = `
+    <div class="stat-card"><div class="num">${lista.length}</div><div class="label">Destinos</div></div>
+    <div class="stat-card"><div class="num">${its.length}</div><div class="label">Opciones</div></div>
+    <div class="stat-card"><div class="num">${its.filter(i=>i.favorito).length}</div><div class="label">Favoritos</div></div>
+    <div class="stat-card"><div class="num">${its.filter(i=>i.estado==='reservado').length}</div><div class="label">Reservados</div></div>
+  `;
+
+  const showDescDest = document.getElementById('show-dest-descartados');
+  const listaFiltrada = (showDescDest && !showDescDest.checked)
+    ? lista.filter(d => d.estado !== 'descartado')
+    : lista;
+  const listaRender = listaFiltrada;
+
+  if (!listaRender.length && !lista.length) {
+    grid.innerHTML = `<div class="empty">
+      <div class="empty-icon">🗺</div>
+      <h3>Sin destinos aún</h3>
+      <p>Pulsa "+ Destino" para añadir los lugares que estás considerando para esta temporada.</p>
+    </div>`;
+    return;
+  }
+
+  if (!listaRender.length) {
+    grid.innerHTML = `<div class="empty"><div class="empty-icon">👁</div><h3>Todos descartados</h3><p>Activa "Mostrar destinos descartados" para verlos.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = listaRender.map(dest => {
+    const its2   = items.filter(i=>i.destinoId===dest.id);
+    const tipos  = [...new Set(its2.map(i=>i.tipo))];
+    const badges = tipos.map(t=>`<span class="dest-badge">${TIPO_EMOJI[t]||'📌'} ${t}</span>`).join('');
+    const hasFav = its2.some(i=>i.favorito);
+    const esDescDest = dest.estado === 'descartado';
+
+    const favItems = its2.filter(i=>i.favorito && i.estado!=='descartado');
+    const precios  = favItems.map(i=>{
+      const n = parseFloat((i.precio||'').replace(/[^\d.,]/g,'').replace(',','.'));
+      return isNaN(n) ? 0 : n;
+    }).filter(n=>n>0);
+    const totalFav = precios.reduce((a,b)=>a+b,0);
+    const moneda   = (()=>{ for(const i of favItems){ const m=(i.precio||'').match(/[€$£¥]/); if(m) return m[0]; } return '€'; })();
+
+    return `<div class="dest-card${esDescDest?' descartado':''}" onclick="irADestino(${dest.id})">
+      <div class="dest-actions" style="display:flex;gap:2px">
+        <button class="btn-dest-del"  onclick="eliminarDestino(${dest.id},event)" title="Eliminar">🗑</button>
+        <button class="btn-dest-edit" onclick="abrirModalDestino(${dest.id});event.stopPropagation()" title="Editar">✏️</button>
+      </div>
+      <span class="dest-fav-dot ${hasFav?'visible':''}">⭐</span>
+      <span class="dest-emoji">${dest.emoji}</span>
+      <div class="dest-nombre">${dest.nombre}</div>
+      ${badges ? `<div class="dest-badges">${badges}</div>` : ''}
+      <div class="dest-count">${its2.length?`<strong>${its2.length}</strong> opcion${its2.length===1?'':'es'}`:'<span style="opacity:.4">Sin opciones</span>'}</div>
+      ${totalFav>0 ? `<div class="dest-presupuesto">⭐ ~${totalFav.toLocaleString('es-ES',{maximumFractionDigits:0})} ${moneda}</div>` : ''}
+      ${dest.notas ? `<div class="dest-notas-mini">${dest.notas.replace(/</g,'&lt;')}</div>` : ''}
+      <div class="dest-card-descartado-badge">❌ Descartado</div>
+      <button class="btn-dest-toggle-desc" onclick="toggleDescartadoDest(${dest.id},event)" title="${esDescDest?'Reactivar':'Descartar'}">
+        ${esDescDest?'↩ Reactivar':'❌ Descartar'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ══ RENDER DETALLE ══
+function renderDetalle() {
+  const grid  = document.getElementById('items-grid');
+  const stats = document.getElementById('stats-detalle');
+  let lista = items.filter(i=>i.destinoId===destinoActual);
+  const total = lista.length;
+  const favs  = lista.filter(i=>i.favorito).length;
+  const res   = lista.filter(i=>i.estado==='reservado').length;
+
+  stats.innerHTML = `
+    <div class="stat-card"><div class="num">${total}</div><div class="label">Total</div></div>
+    <div class="stat-card"><div class="num">${favs}</div><div class="label">Favoritos</div></div>
+    <div class="stat-card"><div class="num">${res}</div><div class="label">Reservados</div></div>
+  `;
+
+  if (filtroDetalle === 'favoritos') lista = lista.filter(i=>i.favorito);
+  else if (filtroDetalle !== 'todos') lista = lista.filter(i=>i.tipo===filtroDetalle);
+
+  const showDesc = document.getElementById('show-descartados');
+  if (showDesc && !showDesc.checked) lista = lista.filter(i=>i.estado!=='descartado');
+
+  if (!lista.length) {
+    grid.innerHTML = `<div class="empty">
+      <div class="empty-icon">${filtroDetalle==='favoritos'?'⭐':'🔍'}</div>
+      <h3>${filtroDetalle==='todos'?'Nada aquí aún':filtroDetalle==='favoritos'?'Sin favoritos':'Sin opciones en este tipo'}</h3>
+      <p>${filtroDetalle==='todos'?'Pulsa "+ Añadir" para registrar vuelos, hoteles, actividades…':'Toca ⭐ para marcar favoritos o prueba otro filtro.'}</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = lista.map(it => {
+    const estrellas = it.rating ? '⭐'.repeat(parseInt(it.rating)) : '';
+    const urlHtml   = it.url ? `<a class="card-link" href="${it.url}" target="_blank" onclick="event.stopPropagation()">🔗 Ver enlace</a>` : '';
+    const notasHtml = it.notas ? `<div class="card-notas">${it.notas.replace(/</g,'&lt;')}</div>` : '';
+    const metaTags  = [
+      it.fechas && `📅 ${it.fechas}`,
+      it.estado && `${ESTADO_EMOJI[it.estado]||''} ${it.estado}`,
+    ].filter(Boolean).map(t=>`<span class="meta-tag">${t}</span>`).join('');
+
+    const esDescartado = it.estado === 'descartado';
+    return `<div class="card${esDescartado?' descartado':''}" data-tipo="${it.tipo}">
+      <div class="card-header">
+        <span class="card-tipo">${TIPO_EMOJI[it.tipo]||'📌'} ${it.tipo}</span>
+        <button class="card-estrella ${it.favorito?'fav':''}" onclick="toggleFav(${it.id})">⭐</button>
+      </div>
+      ${it.titulo?`<div class="card-titulo">${it.titulo}</div>`:''}
+      ${it.precio?`<div class="card-precio">${it.precio} <span>precio</span></div>`:''}
+      ${estrellas?`<div style="margin-bottom:6px;font-size:14px">${estrellas}</div>`:''}
+      <div class="card-meta">${metaTags}</div>
+      ${urlHtml}${notasHtml}
+      <div class="card-actions">
+        <button class="btn-sm primary" onclick="abrirModalItem(${it.id})">✏ Editar</button>
+        <button class="btn-sm" onclick="clonarItem(${it.id})">📋 Clonar</button>
+        ${it.imagenId ? `<button class="btn-sm" onclick="abrirImagenItem('${it.imagenId}')">🖼 Ver imagen</button>` : ''}
+        <button class="btn-sm ${esDescartado?'':'danger'}" style="${esDescartado?'color:var(--red-bright);border-color:var(--red)':''}" onclick="toggleDescartadoItem(${it.id})">${esDescartado?'↩ Reactivar':'❌ Descartar'}</button>
+        <button class="btn-sm danger"  onclick="eliminarItem(${it.id})">🗑 Borrar</button>
+      </div>
+      <div class="card-fecha">Añadido: ${it.fecha}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══ MIGRACIÓN desde versiones anteriores ══
+(function migrar() {
+  // v2 → v3
+  const oldDest  = JSON.parse(localStorage.getItem('vj_destinos_v1') || 'null');
+  const oldItems = JSON.parse(localStorage.getItem('vj_items_v1')    || 'null');
+  if (!temporadas.length && oldDest && oldDest.length) {
+    // destinos ya tenían temporadaId? no, eran libres → agrupar en "General"
+    const dSinTemp = oldDest.filter(d=>!d.temporadaId);
+    if (dSinTemp.length) {
+      const tempId = Date.now();
+      temporadas.push({ id: tempId, nombre: 'General', emoji: '📅', notas: 'Migrado automáticamente', fecha: new Date().toLocaleDateString('es-ES') });
+      dSinTemp.forEach(d => { d.temporadaId = tempId; });
+      destinos = oldDest;
+      items    = oldItems || [];
+      guardarTodo();
+    }
+  }
+  // v1 flat
+  const viejos = JSON.parse(localStorage.getItem('viajes_data_v2') || '[]');
+  if (viejos.length && !temporadas.length) {
+    const tempId = Date.now();
+    temporadas.push({ id: tempId, nombre: 'General', emoji: '📅', notas: '', fecha: new Date().toLocaleDateString('es-ES') });
+    const grupos = [...new Set(viejos.map(v=>v.destino))];
+    grupos.forEach(nombre => {
+      const id = Date.now() + Math.random();
+      destinos.push({ id, temporadaId: tempId, nombre, emoji:'🗺', notas:'', fecha: new Date().toLocaleDateString('es-ES') });
+      viejos.filter(v=>v.destino===nombre).forEach(v => items.push({...v, destinoId: id}));
+    });
+    guardarTodo();
+    localStorage.removeItem('viajes_data_v2');
+  }
+})();
+
+renderTemporadas();
+mostrarAviseSafari();
+actualizarFechaGuardado();
+// Drive: gapiLoaded/gisLoaded inicializan todo via callbacks
+// El auth-overlay se oculta tras login exitoso
+</script>
+</body>
+</html>
