@@ -1074,7 +1074,11 @@ function gisLoaded() {
 }
 
 function handleAuthClick() {
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+  if (!tokenClient) {
+    setTimeout(handleAuthClick, 300);
+    return;
+  }
+  tokenClient.requestAccessToken({ prompt: 'select_account consent' });
 }
 
 // ── startApp: busca o crea el archivo en Drive ────────────────────────────
