@@ -915,8 +915,28 @@
       <label>Notas</label>
       <textarea id="f-notas" placeholder="Pros, contras, condiciones…"></textarea>
     </div>
+    <div class="form-group">
+      <label>Imagen</label>
+      <div id="imagen-preview-wrap" style="display:none;margin-bottom:10px;">
+        <img id="imagen-preview" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;"/>
+        <button type="button" onclick="eliminarImagenItem()" style="margin-top:6px;background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:13px;">🗑 Quitar imagen</button>
+      </div>
+      <div id="imagen-upload-wrap">
+        <input type="file" id="f-imagen" accept="image/*" style="display:none" onchange="previsualizarImagen(event)">
+        <button type="button" onclick="document.getElementById('f-imagen').click()" style="background:var(--surface2);border:1px dashed var(--border);color:var(--text2);border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;width:100%;">📷 Subir imagen</button>
+      </div>
+      <div id="imagen-estado" style="font-size:12px;color:var(--text2);margin-top:4px;"></div>
+    </div>
     <button class="btn-guardar" onclick="guardarItem()">Guardar</button>
     <button class="btn-cancelar" onclick="cerrarOverlay('overlay-item')">Cancelar</button>
+  </div>
+</div>
+
+<!-- ══ OVERLAY: VER IMAGEN ══ -->
+<div class="overlay" id="overlay-imagen-item" onclick="cerrarSiFondo(event,'overlay-imagen-item')" style="z-index:1100">
+  <div style="max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <img id="imagen-item-grande" style="max-width:90vw;max-height:80vh;border-radius:14px;object-fit:contain;background:var(--surface2);" src=""/>
+    <button onclick="cerrarOverlay('overlay-imagen-item')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text1);border-radius:10px;padding:8px 24px;cursor:pointer;font-size:15px;">Cerrar</button>
   </div>
 </div>
 
@@ -1147,13 +1167,18 @@ function actualizarBannerDrive(estado, texto) {
 // ── Guardar en Drive ──────────────────────────────────────────────────────
 async function subirADrive() {
   if (!driveFileId) return;
-  await gapi.client.request({
-    path: '/upload/drive/v3/files/' + driveFileId,
-    method: 'PATCH',
-    params: { uploadType: 'media' },
-    headers: { 'Content-Type': 'application/json' },
-    body: generarJSON()
-  });
+  const token = gapi.client.getToken();
+  await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=media',
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + token.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: generarJSON()
+    }
+  );
   localStorage.setItem('vj_drive_sync', Date.now().toString());
 }
 
@@ -1407,6 +1432,7 @@ function eliminarDestino(id, e) {
 // ══ MODAL ITEM ══
 function abrirModalItem(id) {
   editandoItemId = id || null;
+  _imagenPendiente = null; // reset imagen pendiente
   const titulo = document.getElementById('item-modal-titulo');
   if (id) {
     const it = items.find(i=>i.id===id);
@@ -1419,18 +1445,49 @@ function abrirModalItem(id) {
     document.getElementById('f-rating').value = it.rating || '';
     document.getElementById('f-url').value    = it.url || '';
     document.getElementById('f-notas').value  = it.notas || '';
+    // imagen existente
+    if (it.imagenId) {
+      _imagenExistenteId = it.imagenId;
+      cargarImagenPreview(it.imagenId);
+    } else {
+      _imagenExistenteId = null;
+      resetImagenUI();
+    }
   } else {
     titulo.textContent = 'Nueva opción';
     ['f-titulo','f-precio','f-fechas','f-url','f-notas'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('f-tipo').value   = 'general';
     document.getElementById('f-estado').value = 'investigando';
     document.getElementById('f-rating').value = '';
+    _imagenExistenteId = null;
+    resetImagenUI();
   }
+  document.getElementById('f-imagen').value = '';
   document.getElementById('overlay-item').classList.add('open');
 }
-function guardarItem() {
+async function guardarItem() {
   const titulo = document.getElementById('f-titulo').value.trim();
   if (!titulo) { alert('Escribe un título para esta opción'); return; }
+
+  // Subir imagen si hay una pendiente
+  let imagenId = _imagenExistenteId || null;
+  if (_imagenPendiente) {
+    const token = gapi.client && gapi.client.getToken();
+    if (!token) {
+      alert('Conéctate a Drive primero para poder guardar la imagen.');
+      return;
+    }
+    document.getElementById('imagen-estado').textContent = '⏳ Subiendo imagen…';
+    try {
+      imagenId = await subirImagenADrive(_imagenPendiente);
+      document.getElementById('imagen-estado').textContent = '✅ Imagen guardada';
+    } catch(e) {
+      document.getElementById('imagen-estado').textContent = '❌ Error al subir imagen';
+      console.error(e);
+      return;
+    }
+  }
+
   const it = {
     id: editandoItemId || Date.now(),
     destinoId: destinoActual,
@@ -1443,7 +1500,8 @@ function guardarItem() {
     url:    document.getElementById('f-url').value.trim(),
     notas:  document.getElementById('f-notas').value.trim(),
     favorito: editandoItemId ? (items.find(i=>i.id===editandoItemId)?.favorito||false) : false,
-    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})
+    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}),
+    imagenId: imagenId || undefined
   };
   if (editandoItemId) items = items.map(i=>i.id===editandoItemId?it:i);
   else items.unshift(it);
@@ -1451,7 +1509,122 @@ function guardarItem() {
   cerrarOverlay('overlay-item');
   renderDetalle();
 }
-function toggleDescartadoItem(id) {
+// ══ IMAGEN EN ITEMS ══
+let _imagenPendiente  = null; // File object pendiente de subir
+let _imagenExistenteId = null; // Drive fileId ya guardado
+
+function resetImagenUI() {
+  _imagenPendiente = null;
+  document.getElementById('imagen-preview-wrap').style.display = 'none';
+  document.getElementById('imagen-upload-wrap').style.display = 'block';
+  document.getElementById('imagen-estado').textContent = '';
+}
+
+function previsualizarImagen(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  _imagenPendiente = file;
+  _imagenExistenteId = null;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('imagen-preview').src = e.target.result;
+    document.getElementById('imagen-preview-wrap').style.display = 'block';
+    document.getElementById('imagen-upload-wrap').style.display = 'none';
+    document.getElementById('imagen-estado').textContent = '📷 Lista para guardar con el item';
+  };
+  reader.readAsDataURL(file);
+}
+
+function eliminarImagenItem() {
+  _imagenPendiente = null;
+  _imagenExistenteId = null;
+  resetImagenUI();
+}
+
+async function cargarImagenPreview(fileId) {
+  const token = gapi.client && gapi.client.getToken();
+  if (!token) {
+    document.getElementById('imagen-estado').textContent = '⚠️ Conéctate a Drive para ver la imagen';
+    return;
+  }
+  try {
+    const resp = await gapi.client.drive.files.get({ fileId, alt: 'media' });
+    // Convertir respuesta a blob/URL
+    const bytes = resp.body;
+    const byteArr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) byteArr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([byteArr], { type: 'image/jpeg' });
+    const url = URL.createObjectURL(blob);
+    document.getElementById('imagen-preview').src = url;
+    document.getElementById('imagen-preview-wrap').style.display = 'block';
+    document.getElementById('imagen-upload-wrap').style.display = 'none';
+  } catch(e) {
+    document.getElementById('imagen-estado').textContent = '❌ No se pudo cargar la imagen';
+  }
+}
+
+async function subirImagenADrive(file) {
+  const token = gapi.client.getToken();
+  // 1. Buscar o crear carpeta
+  const folderName = 'imagenes-viajes-investigados';
+  let folderId;
+  const folderSearch = await gapi.client.drive.files.list({
+    q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: 'files(id)'
+  });
+  if (folderSearch.result.files && folderSearch.result.files.length > 0) {
+    folderId = folderSearch.result.files[0].id;
+  } else {
+    const folderResp = await gapi.client.drive.files.create({
+      resource: { name: folderName, mimeType: 'application/vnd.google-apps.folder' },
+      fields: 'id'
+    });
+    folderId = folderResp.result.id;
+  }
+  // 2. Subir imagen con multipart
+  const metadata = { name: file.name, parents: [folderId] };
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const boundary = '-------viajesupload';
+  const body = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${file.type}\r\nContent-Transfer-Encoding: base64\r\n\r\n${base64}\r\n--${boundary}--`;
+  const resp = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token.access_token,
+        'Content-Type': `multipart/related; boundary="${boundary}"`
+      },
+      body
+    }
+  );
+  const data = await resp.json();
+  if (!data.id) throw new Error('No se obtuvo ID del archivo subido');
+  return data.id;
+}
+
+function abrirImagenItem(fileId) {
+  // Abrir imagen en overlay
+  const overlay = document.getElementById('overlay-imagen-item');
+  const img = document.getElementById('imagen-item-grande');
+  overlay.classList.add('open');
+  img.src = '';
+  const token = gapi.client && gapi.client.getToken();
+  if (!token) { toast('Conéctate a Drive para ver la imagen'); cerrarOverlay('overlay-imagen-item'); return; }
+  gapi.client.drive.files.get({ fileId, alt: 'media' }).then(resp => {
+    const bytes = resp.body;
+    const byteArr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) byteArr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([byteArr], { type: 'image/jpeg' });
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
+
   items = items.map(i => i.id===id ? {...i, estado: i.estado==='descartado'?'investigando':'descartado'} : i);
   guardarTodo();
   renderDetalle();
@@ -1817,6 +1990,7 @@ function renderDetalle() {
       <div class="card-actions">
         <button class="btn-sm primary" onclick="abrirModalItem(${it.id})">✏ Editar</button>
         <button class="btn-sm" onclick="clonarItem(${it.id})">📋 Clonar</button>
+        ${it.imagenId ? `<button class="btn-sm" onclick="abrirImagenItem('${it.imagenId}')">🖼 Ver imagen</button>` : ''}
         <button class="btn-sm ${esDescartado?'':'danger'}" style="${esDescartado?'color:var(--red-bright);border-color:var(--red)':''}" onclick="toggleDescartadoItem(${it.id})">${esDescartado?'↩ Reactivar':'❌ Descartar'}</button>
         <button class="btn-sm danger"  onclick="eliminarItem(${it.id})">🗑 Borrar</button>
       </div>
