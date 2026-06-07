@@ -675,31 +675,12 @@
 ══════════════════════════════════════ -->
 
 <!-- ══ AUTH OVERLAY ══ -->
-<script>
-// Stub que espera a que el script principal cargue
-function handleAuthClick() {
-  if (window._handleAuthClickReal) {
-    window._handleAuthClickReal();
-  } else {
-    setTimeout(handleAuthClick, 100);
-  }
-}
-function usarSinDrive() {
-  if (window._usarSinDriveReal) {
-    window._usarSinDriveReal();
-  } else {
-    document.getElementById('auth-overlay').style.display = 'none';
-  }
-}
-</script>
 <div id="auth-overlay" style="position:fixed;inset:0;background:var(--grey1);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:var(--grey9);">
   <h2 style="font-family:'Playfair Display',serif;font-size:28px;">✈ Mi <span style="color:var(--red-bright);font-style:italic">Diario</span> de Viajes</h2>
   <p style="color:var(--grey7);font-size:14px;">Sincronización automática con Google Drive</p>
-  <button id="btn-conectar-drive" onclick="handleAuthClick()" style="background:var(--red);color:white;border:none;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:'DM Sans',sans-serif;transition:background 0.2s;" onmouseover="this.style.background='var(--red-bright)'" onmouseout="this.style.background='var(--red)'">
+  <button onclick="handleAuthClick()" style="background:var(--red);color:white;border:none;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:'DM Sans',sans-serif;transition:background 0.2s;" onmouseover="this.style.background='var(--red-bright)'" onmouseout="this.style.background='var(--red)'">
     ☁️ Conectar con Google Drive
   </button>
-  <div id="auth-status" style="font-size:12px;color:var(--grey7);text-align:center;min-height:18px;"></div>
-  <button onclick="usarSinDrive()" style="background:none;border:none;color:var(--grey6);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;">Usar sin Drive (solo local)</button>
   <p style="color:var(--grey6);font-size:12px;max-width:300px;text-align:center;line-height:1.6">Tus datos se guardan en tu propio Drive.<br>Solo tú tienes acceso.</p>
 </div>
 
@@ -779,13 +760,6 @@ function usarSinDrive() {
     </div>
   </header>
   <div class="stats" id="stats-destinos"></div>
-  <div class="drive-banner desconectado" id="drive-banner-dest">
-    <span class="drive-banner-icon">☁️</span>
-    <div class="drive-banner-text">
-      <strong id="drive-banner-title-dest">Sin sincronización</strong>
-      <span id="drive-banner-sub-dest"></span>
-    </div>
-  </div>
   <label class="toggle-descartados-dest">
     <input type="checkbox" id="show-dest-descartados" checked onchange="renderDestinos()">
     Mostrar destinos descartados
@@ -820,13 +794,6 @@ function usarSinDrive() {
     <button class="filter-chip" onclick="filtrarDetalle('general',this)">📌 General</button>
   </div>
   <div class="stats" id="stats-detalle"></div>
-  <div class="drive-banner desconectado" id="drive-banner-det">
-    <span class="drive-banner-icon">☁️</span>
-    <div class="drive-banner-text">
-      <strong id="drive-banner-title-det">Sin sincronización</strong>
-      <span id="drive-banner-sub-det"></span>
-    </div>
-  </div>
   <label class="toggle-descartados">
     <input type="checkbox" id="show-descartados" checked onchange="renderDetalle()">
     Mostrar descartados
@@ -956,9 +923,9 @@ function usarSinDrive() {
       </div>
       <div id="imagen-upload-wrap">
         <input type="file" id="f-imagen" accept="image/*" style="display:none" onchange="previsualizarImagen(event)">
-        <button type="button" onclick="document.getElementById('f-imagen').click()" style="background:var(--grey4);border:1px dashed var(--border);color:var(--grey7);border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;width:100%;">📷 Subir imagen</button>
+        <button type="button" onclick="document.getElementById('f-imagen').click()" style="background:var(--surface2);border:1px dashed var(--border);color:var(--text2);border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;width:100%;">📷 Subir imagen</button>
       </div>
-      <div id="imagen-estado" style="font-size:12px;color:var(--grey7);margin-top:4px;"></div>
+      <div id="imagen-estado" style="font-size:12px;color:var(--text2);margin-top:4px;"></div>
     </div>
     <button class="btn-guardar" onclick="guardarItem()">Guardar</button>
     <button class="btn-cancelar" onclick="cerrarOverlay('overlay-item')">Cancelar</button>
@@ -968,8 +935,8 @@ function usarSinDrive() {
 <!-- ══ OVERLAY: VER IMAGEN ══ -->
 <div class="overlay" id="overlay-imagen-item" onclick="cerrarSiFondo(event,'overlay-imagen-item')" style="z-index:1100">
   <div style="max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:12px;">
-    <img id="imagen-item-grande" style="max-width:90vw;max-height:80vh;border-radius:14px;object-fit:contain;background:var(--grey3);" src=""/>
-    <button onclick="cerrarOverlay('overlay-imagen-item')" style="background:var(--grey4);border:1px solid var(--border);color:var(--grey9);border-radius:10px;padding:8px 24px;cursor:pointer;font-size:15px;">Cerrar</button>
+    <img id="imagen-item-grande" style="max-width:90vw;max-height:80vh;border-radius:14px;object-fit:contain;background:var(--surface2);" src=""/>
+    <button onclick="cerrarOverlay('overlay-imagen-item')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text1);border-radius:10px;padding:8px 24px;cursor:pointer;font-size:15px;">Cerrar</button>
   </div>
 </div>
 
@@ -1002,10 +969,6 @@ function usarSinDrive() {
 
 <script>
 // ══ CLAVES ══
-window.onerror = function(msg, src, line, col, err) {
-  document.getElementById('auth-status') && (document.getElementById('auth-status').textContent = '❌ Error JS: ' + msg + ' (línea ' + line + ')');
-  console.error('Script error:', msg, line, err);
-};
 const CLAVE_T = 'vj_temporadas_v1';
 const CLAVE_D = 'vj_destinos_v1';
 const CLAVE_I = 'vj_items_v1';
@@ -1080,7 +1043,7 @@ function generarJSON() {
 
 // ══ GOOGLE DRIVE OAuth (patrón gapi + gsi idéntico al index.html) ══
 const CLIENT_ID  = '940633332310-8jvdkccdfeedcbna2sl928bpk3lfe2k1.apps.googleusercontent.com';
-const SCOPES     = 'https://www.googleapis.com/auth/drive';
+const SCOPES     = 'https://www.googleapis.com/auth/drive.file';
 const FILE_NAME  = 'viajes_backup.json';
 
 let gapiInited  = false;
@@ -1110,42 +1073,15 @@ function gisLoaded() {
   gisInited = true;
 }
 
-function setAuthStatus(msg) {
-  const el = document.getElementById('auth-status');
-  if (el) el.textContent = msg;
-}
-
-function usarSinDrive() {
-  document.getElementById('auth-overlay').style.display = 'none';
-  actualizarBannerDrive('off', 'Sin sincronización (modo local)');
-  toast('📱 Usando en modo local');
-}
-
 function handleAuthClick() {
-  setAuthStatus('⏳ Cargando scripts de Google...');
-  if (!tokenClient) {
-    // Comprobar si los scripts de Google están bloqueados
-    if (typeof google === 'undefined') {
-      setAuthStatus('❌ Scripts de Google no cargaron. ¿Estás en file://? Prueba a abrir desde un servidor.');
-      return;
-    }
-    setTimeout(handleAuthClick, 300);
-    return;
-  }
-  setAuthStatus('🔑 Abriendo ventana de Google...');
-  tokenClient.requestAccessToken({ prompt: 'select_account consent' });
+  tokenClient.requestAccessToken({ prompt: 'consent' });
 }
 
 // ── startApp: busca o crea el archivo en Drive ────────────────────────────
 async function esperarGapi() {
   if (gapiInited) return;
-  return new Promise((resolve, reject) => {
-    let intentos = 0;
-    const t = setInterval(() => {
-      intentos++;
-      if (gapiInited) { clearInterval(t); resolve(); }
-      else if (intentos > 150) { clearInterval(t); reject(new Error('No se pudo conectar con Google. Comprueba tu conexión y vuelve a intentarlo.')); }
-    }, 100);
+  return new Promise(resolve => {
+    const t = setInterval(() => { if (gapiInited) { clearInterval(t); resolve(); } }, 100);
   });
 }
 
@@ -1153,13 +1089,13 @@ async function startDriveApp() {
   try {
     actualizarBannerDrive('saving', 'Conectando con Drive...');
     await esperarGapi();
-    const listResp = await gapi.client.drive.files.list({
-      q: `name='${FILE_NAME}' and trashed=false and 'me' in owners`,
+    const response = await gapi.client.drive.files.list({
+      q: `name='${FILE_NAME}' and trashed=false`,
       fields: 'files(id,name,modifiedTime)',
       orderBy: 'modifiedTime desc'
     });
-    const files = listResp.result.files || [];
-    if (files.length > 0) {
+    const files = response.result.files;
+    if (files && files.length > 0) {
       driveFileId = files[0].id;
       await cargarDesdeDrive();
     } else {
@@ -1167,18 +1103,16 @@ async function startDriveApp() {
     }
     actualizarBannerDrive('sync', 'Sincronizado con Drive');
   } catch(err) {
-    console.error('startDriveApp error:', err);
-    actualizarBannerDrive('error', 'Error: ' + (err.message || JSON.stringify(err)));
+    console.error(err);
+    actualizarBannerDrive('error', 'Error de conexión');
   }
 }
 
 async function crearArchivoDrive() {
-  const resp = await gapi.client.drive.files.create({
-    resource: { name: FILE_NAME, mimeType: 'application/json' },
-    fields: 'id'
-  });
+  const metadata = { name: FILE_NAME, mimeType: 'application/json' };
+  const resp = await gapi.client.drive.files.create({ resource: metadata, fields: 'id' });
   driveFileId = resp.result.id;
-  await subirADrive();
+  await subirADrive(); // subir estado actual
 }
 
 // ── Desconectar ───────────────────────────────────────────────────────────
@@ -1212,7 +1146,9 @@ function actualizarBannerDrive(estado, texto) {
     title.textContent = '☁️ ' + (texto || 'Sincronizado con Drive');
     const ts = localStorage.getItem('vj_drive_sync');
     sub.textContent = ts ? 'Última sync: ' + new Date(parseInt(ts)).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : 'Todo guardado';
-    btn.textContent = 'Desconectar'; btn.className = 'btn-drive desconectar'; btn.onclick = desconectarDrive;
+    btn.textContent = 'Desconectar';
+    btn.className = 'btn-drive desconectar';
+    btn.onclick = desconectarDrive;
   } else if (estado === 'saving') {
     dot.style.background = '#e1b12c';
     title.textContent = '⏳ ' + (texto || 'Sincronizando...');
@@ -1222,31 +1158,27 @@ function actualizarBannerDrive(estado, texto) {
     dot.style.background = '#555';
     title.textContent = texto || 'Sin sincronización con Drive';
     sub.textContent = 'Conecta para guardar en la nube';
-    btn.textContent = 'Conectar Drive'; btn.className = 'btn-drive conectar'; btn.onclick = handleAuthClick;
+    btn.textContent = 'Conectar Drive';
+    btn.className = 'btn-drive conectar';
+    btn.onclick = handleAuthClick;
   }
-
-  // Banners secundarios (sin botón)
-  ['drive-banner-dest','drive-banner-det'].forEach(id => {
-    const b = document.getElementById(id);
-    if (!b) return;
-    const t = b.querySelector('strong') || b.querySelector('[id^="drive-banner-title"]');
-    const s = b.querySelector('span:not(strong)') || b.querySelector('[id^="drive-banner-sub"]');
-    if (estado === 'sync') { b.classList.remove('desconectado'); if(t) t.textContent = '☁️ Sincronizado'; if(s) s.textContent = ''; }
-    else if (estado === 'saving') { if(t) t.textContent = '⏳ Guardando...'; if(s) s.textContent = ''; }
-    else { b.classList.add('desconectado'); if(t) t.textContent = 'Sin sincronización'; if(s) s.textContent = 'Conecta para guardar en la nube'; }
-  });
 }
 
 // ── Guardar en Drive ──────────────────────────────────────────────────────
 async function subirADrive() {
   if (!driveFileId) return;
-  await gapi.client.request({
-    path: '/upload/drive/v3/files/' + driveFileId,
-    method: 'PATCH',
-    params: { uploadType: 'media' },
-    headers: { 'Content-Type': 'application/json' },
-    body: generarJSON()
-  });
+  const token = gapi.client.getToken();
+  await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=media',
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + token.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: generarJSON()
+    }
+  );
   localStorage.setItem('vj_drive_sync', Date.now().toString());
 }
 
@@ -1271,11 +1203,26 @@ async function autoguardarJSON() {
 
 // ── Cargar desde Drive ────────────────────────────────────────────────────
 async function cargarDesdeDrive() {
-  const resp = await gapi.client.drive.files.get({
-    fileId: driveFileId,
-    alt: 'media'
-  });
-  const data = resp.result;
+  const res = await gapi.client.drive.files.get({ fileId: driveFileId, alt: 'media' });
+
+  // gapi con alt:media puede devolver el contenido en res.result (objeto o string)
+  // o en res.body (string) según el navegador. Probamos ambos.
+  let data = res.result;
+  const esVacio = !data || (typeof data === 'object' && Object.keys(data).length === 0);
+  if (esVacio && res.body) {
+    try { data = JSON.parse(res.body); } catch(e) {
+      console.error('Error parseando res.body de Drive:', e);
+      actualizarBannerDrive('error', 'Error al leer datos de Drive');
+      return;
+    }
+  } else if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch(e) {
+      console.error('Error parseando res.result de Drive:', e);
+      actualizarBannerDrive('error', 'Error al leer datos de Drive');
+      return;
+    }
+  }
+
   if (data && data.version >= 3 && Array.isArray(data.temporadas)) {
     temporadas = data.temporadas || [];
     destinos   = data.destinos   || [];
@@ -1287,8 +1234,11 @@ async function cargarDesdeDrive() {
     toast('☁️ Datos cargados desde Drive');
   } else if (!data || (Array.isArray(data.temporadas) && data.temporadas.length === 0
              && destinos.length === 0 && items.length === 0)) {
+    // Drive vacío y local también vacío → primer uso, subir estado inicial
     await subirADrive();
   }
+  // En cualquier otro caso (datos locales presentes, Drive sin datos legibles)
+  // no tocamos Drive para no machacar datos
 }
 
 function copiaDeSeguridad() {
@@ -1482,7 +1432,7 @@ function eliminarDestino(id, e) {
 // ══ MODAL ITEM ══
 function abrirModalItem(id) {
   editandoItemId = id || null;
-  _imagenPendiente = null;
+  _imagenPendiente = null; // reset imagen pendiente
   const titulo = document.getElementById('item-modal-titulo');
   if (id) {
     const it = items.find(i=>i.id===id);
@@ -1495,6 +1445,7 @@ function abrirModalItem(id) {
     document.getElementById('f-rating').value = it.rating || '';
     document.getElementById('f-url').value    = it.url || '';
     document.getElementById('f-notas').value  = it.notas || '';
+    // imagen existente
     if (it.imagenId) {
       _imagenExistenteId = it.imagenId;
       cargarImagenPreview(it.imagenId);
@@ -1558,33 +1509,9 @@ async function guardarItem() {
   cerrarOverlay('overlay-item');
   renderDetalle();
 }
-function toggleDescartadoItem(id) {
-  items = items.map(i => i.id===id ? {...i, estado: i.estado==='descartado'?'investigando':'descartado'} : i);
-  guardarTodo();
-  renderDetalle();
-}
-
-function eliminarItem(id) {
-  if (!confirm('¿Eliminar esta opción?')) return;
-  items = items.filter(i=>i.id!==id);
-  guardarTodo();
-  renderDetalle();
-}
-function clonarItem(id) {
-  const it = items.find(i=>i.id===id);
-  if (!it) return;
-  const clon = { ...it, id: Date.now(), titulo: '(Copia) ' + it.titulo, favorito: false,
-    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) };
-  const idx = items.findIndex(i=>i.id===id);
-  items.splice(idx+1, 0, clon);
-  guardarTodo();
-  renderDetalle();
-  toast('📋 Opción clonada');
-}
-
 // ══ IMAGEN EN ITEMS ══
-let _imagenPendiente  = null;
-let _imagenExistenteId = null;
+let _imagenPendiente  = null; // File object pendiente de subir
+let _imagenExistenteId = null; // Drive fileId ya guardado
 
 function resetImagenUI() {
   _imagenPendiente = null;
@@ -1622,6 +1549,7 @@ async function cargarImagenPreview(fileId) {
   }
   try {
     const resp = await gapi.client.drive.files.get({ fileId, alt: 'media' });
+    // Convertir respuesta a blob/URL
     const bytes = resp.body;
     const byteArr = new Uint8Array(bytes.length);
     for (let i = 0; i < bytes.length; i++) byteArr[i] = bytes.charCodeAt(i);
@@ -1637,6 +1565,7 @@ async function cargarImagenPreview(fileId) {
 
 async function subirImagenADrive(file) {
   const token = gapi.client.getToken();
+  // 1. Buscar o crear carpeta
   const folderName = 'imagenes-viajes-investigados';
   let folderId;
   const folderSearch = await gapi.client.drive.files.list({
@@ -1652,6 +1581,7 @@ async function subirImagenADrive(file) {
     });
     folderId = folderResp.result.id;
   }
+  // 2. Subir imagen con multipart
   const metadata = { name: file.name, parents: [folderId] };
   const base64 = await new Promise((res, rej) => {
     const r = new FileReader();
@@ -1678,6 +1608,7 @@ async function subirImagenADrive(file) {
 }
 
 function abrirImagenItem(fileId) {
+  // Abrir imagen en overlay
   const overlay = document.getElementById('overlay-imagen-item');
   const img = document.getElementById('imagen-item-grande');
   overlay.classList.add('open');
@@ -1691,6 +1622,30 @@ function abrirImagenItem(fileId) {
     const blob = new Blob([byteArr], { type: 'image/jpeg' });
     img.src = URL.createObjectURL(blob);
   });
+}
+
+
+  items = items.map(i => i.id===id ? {...i, estado: i.estado==='descartado'?'investigando':'descartado'} : i);
+  guardarTodo();
+  renderDetalle();
+}
+
+function eliminarItem(id) {
+  if (!confirm('¿Eliminar esta opción?')) return;
+  items = items.filter(i=>i.id!==id);
+  guardarTodo();
+  renderDetalle();
+}
+function clonarItem(id) {
+  const it = items.find(i=>i.id===id);
+  if (!it) return;
+  const clon = { ...it, id: Date.now(), titulo: '(Copia) ' + it.titulo, favorito: false,
+    fecha: new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) };
+  const idx = items.findIndex(i=>i.id===id);
+  items.splice(idx+1, 0, clon);
+  guardarTodo();
+  renderDetalle();
+  toast('📋 Opción clonada');
 }
 
 function toggleFav(id) {
