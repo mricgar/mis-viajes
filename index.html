@@ -1068,8 +1068,9 @@ function gisLoaded() {
 }
 
 function handleAuthClick() {
-  if (!tokenClient) {
-    setTimeout(handleAuthClick, 300);
+  if (!gapiInited || !tokenClient) {
+    actualizarBannerDrive('error', '⏳ Google aún cargando, espera un momento...');
+    setTimeout(handleAuthClick, 500);
     return;
   }
   tokenClient.requestAccessToken({ prompt: 'select_account consent' });
@@ -1083,7 +1084,10 @@ async function esperarGapi() {
     const t = setInterval(() => {
       intentos++;
       if (gapiInited) { clearInterval(t); resolve(); }
-      else if (intentos > 50) { clearInterval(t); reject(new Error('gapi tardó demasiado en inicializarse')); }
+      else if (intentos > 150) { // 15 segundos en vez de 5
+        clearInterval(t);
+        reject(new Error('No se pudo conectar con Google. Comprueba tu conexión y vuelve a intentarlo.'));
+      }
     }, 100);
   });
 }
