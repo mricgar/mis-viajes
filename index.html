@@ -1153,12 +1153,9 @@ async function startDriveApp() {
   try {
     actualizarBannerDrive('saving', 'Conectando con Drive...');
     await esperarGapi();
-    const token = gapi.client.getToken();
-    if (!token) throw new Error('Sin token tras login');
-    // Buscar archivo por nombre usando fetch directo (más fiable que gapi en todos los navegadores)
-    const listResp = await fetch(
+    const listResp = await fetchConToken(
       `https://www.googleapis.com/drive/v3/files?q=name%3D'${FILE_NAME}'%20and%20trashed%3Dfalse&fields=files(id,name,modifiedTime)&orderBy=modifiedTime%20desc`,
-      { headers: { 'Authorization': 'Bearer ' + token.access_token } }
+      { headers: {} }
     );
     if (!listResp.ok) throw new Error('Error listando Drive: ' + listResp.status);
     const listData = await listResp.json();
@@ -1177,20 +1174,12 @@ async function startDriveApp() {
 }
 
 async function crearArchivoDrive() {
-  const token = gapi.client.getToken();
-  const metadata = { name: FILE_NAME, mimeType: 'application/json' };
   const boundary = '-------viajesbackup';
+  const metadata = { name: FILE_NAME, mimeType: 'application/json' };
   const body = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${generarJSON()}\r\n--${boundary}--`;
-  const resp = await fetch(
+  const resp = await fetchConToken(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token.access_token,
-        'Content-Type': `multipart/related; boundary="${boundary}"`
-      },
-      body
-    }
+    { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary="${boundary}"` }, body }
   );
   if (!resp.ok) throw new Error('Error creando archivo en Drive: ' + resp.status);
   const data = await resp.json();
@@ -1254,20 +1243,43 @@ function actualizarBannerDrive(estado, texto) {
 }
 
 // ── Guardar en Drive ──────────────────────────────────────────────────────
+async function fetchConToken(url, opciones) {
+  let token = gapi.client.getToken();
+  if (!token) throw new Error('Sin token');
+
+  let resp = await fetch(url, {
+    ...opciones,
+    headers: { ...opciones.headers, 'Authorization': 'Bearer ' + token.access_token }
+  });
+
+  // Token caducado → pedir nuevo silenciosamente y reintentar
+  if (resp.status === 401) {
+    await new Promise((resolve, reject) => {
+      tokenClient.requestAccessToken({ prompt: '' });
+      // Esperar a que gisLoaded callback renueve el token
+      let intentos = 0;
+      const t = setInterval(() => {
+        intentos++;
+        const newToken = gapi.client.getToken();
+        if (newToken && newToken.access_token !== token.access_token) {
+          clearInterval(t); resolve();
+        } else if (intentos > 30) { clearInterval(t); reject(new Error('No se pudo renovar el token')); }
+      }, 200);
+    });
+    token = gapi.client.getToken();
+    resp = await fetch(url, {
+      ...opciones,
+      headers: { ...opciones.headers, 'Authorization': 'Bearer ' + token.access_token }
+    });
+  }
+  return resp;
+}
+
 async function subirADrive() {
   if (!driveFileId) return;
-  const token = gapi.client.getToken();
-  if (!token) throw new Error('Sin token');
-  const resp = await fetch(
+  const resp = await fetchConToken(
     'https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=media',
-    {
-      method: 'PATCH',
-      headers: {
-        'Authorization': 'Bearer ' + token.access_token,
-        'Content-Type': 'application/json'
-      },
-      body: generarJSON()
-    }
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: generarJSON() }
   );
   if (!resp.ok) throw new Error('Error subiendo a Drive: ' + resp.status);
   localStorage.setItem('vj_drive_sync', Date.now().toString());
@@ -1294,11 +1306,9 @@ async function autoguardarJSON() {
 
 // ── Cargar desde Drive ────────────────────────────────────────────────────
 async function cargarDesdeDrive() {
-  const token = gapi.client.getToken();
-  if (!token) throw new Error('Sin token');
-  const resp = await fetch(
+  const resp = await fetchConToken(
     'https://www.googleapis.com/drive/v3/files/' + driveFileId + '?alt=media',
-    { headers: { 'Authorization': 'Bearer ' + token.access_token } }
+    { headers: {} }
   );
   if (!resp.ok) throw new Error('Error leyendo Drive: ' + resp.status);
   let data;
