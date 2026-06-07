@@ -1153,13 +1153,12 @@ async function startDriveApp() {
   try {
     actualizarBannerDrive('saving', 'Conectando con Drive...');
     await esperarGapi();
-    const listResp = await fetchConToken(
-      `https://www.googleapis.com/drive/v3/files?q=name%3D'${FILE_NAME}'%20and%20trashed%3Dfalse&fields=files(id,name,modifiedTime)&orderBy=modifiedTime%20desc`,
-      { headers: {} }
-    );
-    if (!listResp.ok) throw new Error('Error listando Drive: ' + listResp.status);
-    const listData = await listResp.json();
-    const files = listData.files || [];
+    const listResp = await gapi.client.drive.files.list({
+      q: `name='${FILE_NAME}' and trashed=false and 'me' in owners`,
+      fields: 'files(id,name,modifiedTime)',
+      orderBy: 'modifiedTime desc'
+    });
+    const files = listResp.result.files || [];
     if (files.length > 0) {
       driveFileId = files[0].id;
       await cargarDesdeDrive();
@@ -1174,16 +1173,12 @@ async function startDriveApp() {
 }
 
 async function crearArchivoDrive() {
-  const boundary = '-------viajesbackup';
-  const metadata = { name: FILE_NAME, mimeType: 'application/json' };
-  const body = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${generarJSON()}\r\n--${boundary}--`;
-  const resp = await fetchConToken(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
-    { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary="${boundary}"` }, body }
-  );
-  if (!resp.ok) throw new Error('Error creando archivo en Drive: ' + resp.status);
-  const data = await resp.json();
-  driveFileId = data.id;
+  const resp = await gapi.client.drive.files.create({
+    resource: { name: FILE_NAME, mimeType: 'application/json' },
+    fields: 'id'
+  });
+  driveFileId = resp.result.id;
+  await subirADrive();
 }
 
 // ── Desconectar ───────────────────────────────────────────────────────────
@@ -1243,51 +1238,15 @@ function actualizarBannerDrive(estado, texto) {
 }
 
 // ── Guardar en Drive ──────────────────────────────────────────────────────
-async function fetchConToken(url, opciones) {
-  let token = gapi.client.getToken();
-  console.log('[Drive] token:', token ? 'ok access_token=' + (token.access_token||'').slice(0,20) : 'NULL');
-  if (!token || !token.access_token) throw new Error('Sin token válido');
-
-  let resp;
-  try {
-    resp = await fetch(url, {
-      ...opciones,
-      headers: { ...opciones.headers, 'Authorization': 'Bearer ' + token.access_token }
-    });
-  } catch(e) {
-    console.error('[Drive] fetch falló:', e.message, 'url:', url.slice(0,80));
-    throw e;
-  }
-
-  // Token caducado → pedir nuevo silenciosamente y reintentar
-  if (resp.status === 401) {
-    await new Promise((resolve, reject) => {
-      tokenClient.requestAccessToken({ prompt: '' });
-      let intentos = 0;
-      const t = setInterval(() => {
-        intentos++;
-        const newToken = gapi.client.getToken();
-        if (newToken && newToken.access_token !== token.access_token) {
-          clearInterval(t); resolve();
-        } else if (intentos > 30) { clearInterval(t); reject(new Error('No se pudo renovar el token')); }
-      }, 200);
-    });
-    token = gapi.client.getToken();
-    resp = await fetch(url, {
-      ...opciones,
-      headers: { ...opciones.headers, 'Authorization': 'Bearer ' + token.access_token }
-    });
-  }
-  return resp;
-}
-
 async function subirADrive() {
   if (!driveFileId) return;
-  const resp = await fetchConToken(
-    'https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=media',
-    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: generarJSON() }
-  );
-  if (!resp.ok) throw new Error('Error subiendo a Drive: ' + resp.status);
+  await gapi.client.request({
+    path: '/upload/drive/v3/files/' + driveFileId,
+    method: 'PATCH',
+    params: { uploadType: 'media' },
+    headers: { 'Content-Type': 'application/json' },
+    body: generarJSON()
+  });
   localStorage.setItem('vj_drive_sync', Date.now().toString());
 }
 
@@ -1312,15 +1271,11 @@ async function autoguardarJSON() {
 
 // ── Cargar desde Drive ────────────────────────────────────────────────────
 async function cargarDesdeDrive() {
-  const resp = await fetchConToken(
-    'https://www.googleapis.com/drive/v3/files/' + driveFileId + '?alt=media',
-    { headers: {} }
-  );
-  if (!resp.ok) throw new Error('Error leyendo Drive: ' + resp.status);
-  let data;
-  try { data = await resp.json(); } catch(e) {
-    throw new Error('Error parseando JSON de Drive');
-  }
+  const resp = await gapi.client.drive.files.get({
+    fileId: driveFileId,
+    alt: 'media'
+  });
+  const data = resp.result;
   if (data && data.version >= 3 && Array.isArray(data.temporadas)) {
     temporadas = data.temporadas || [];
     destinos   = data.destinos   || [];
