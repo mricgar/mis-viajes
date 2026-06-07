@@ -678,9 +678,11 @@
 <div id="auth-overlay" style="position:fixed;inset:0;background:var(--grey1);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:var(--grey9);">
   <h2 style="font-family:'Playfair Display',serif;font-size:28px;">✈ Mi <span style="color:var(--red-bright);font-style:italic">Diario</span> de Viajes</h2>
   <p style="color:var(--grey7);font-size:14px;">Sincronización automática con Google Drive</p>
-  <button onclick="handleAuthClick()" style="background:var(--red);color:white;border:none;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:'DM Sans',sans-serif;transition:background 0.2s;" onmouseover="this.style.background='var(--red-bright)'" onmouseout="this.style.background='var(--red)'">
+  <button id="btn-conectar-drive" onclick="handleAuthClick()" style="background:var(--red);color:white;border:none;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:'DM Sans',sans-serif;transition:background 0.2s;" onmouseover="this.style.background='var(--red-bright)'" onmouseout="this.style.background='var(--red)'">
     ☁️ Conectar con Google Drive
   </button>
+  <div id="auth-status" style="font-size:12px;color:var(--grey7);text-align:center;min-height:18px;"></div>
+  <button onclick="usarSinDrive()" style="background:none;border:none;color:var(--grey6);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;">Usar sin Drive (solo local)</button>
   <p style="color:var(--grey6);font-size:12px;max-width:300px;text-align:center;line-height:1.6">Tus datos se guardan en tu propio Drive.<br>Solo tú tienes acceso.</p>
 </div>
 
@@ -1087,11 +1089,29 @@ function gisLoaded() {
   gisInited = true;
 }
 
+function setAuthStatus(msg) {
+  const el = document.getElementById('auth-status');
+  if (el) el.textContent = msg;
+}
+
+function usarSinDrive() {
+  document.getElementById('auth-overlay').style.display = 'none';
+  actualizarBannerDrive('off', 'Sin sincronización (modo local)');
+  toast('📱 Usando en modo local');
+}
+
 function handleAuthClick() {
+  setAuthStatus('⏳ Cargando scripts de Google...');
   if (!tokenClient) {
+    // Comprobar si los scripts de Google están bloqueados
+    if (typeof google === 'undefined') {
+      setAuthStatus('❌ Scripts de Google no cargaron. ¿Estás en file://? Prueba a abrir desde un servidor.');
+      return;
+    }
     setTimeout(handleAuthClick, 300);
     return;
   }
+  setAuthStatus('🔑 Abriendo ventana de Google...');
   tokenClient.requestAccessToken({ prompt: 'select_account consent' });
 }
 
@@ -1681,7 +1701,7 @@ function abrirImagenItem(fileId) {
   });
 }
 
-
+function toggleFav(id) {
   items = items.map(i=>i.id===id?{...i,favorito:!i.favorito}:i);
   guardarTodo();
   renderDetalle();
