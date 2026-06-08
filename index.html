@@ -811,6 +811,7 @@
     ☁️ Conectar con Google Drive
   </button>
   <p style="color:var(--grey6);font-size:12px;max-width:300px;text-align:center;line-height:1.6">Tus datos se guardan en tu propio Drive.<br>Solo tú tienes acceso.</p>
+  <span style="color:var(--grey5);font-size:11px;letter-spacing:0.5px;">v1.2.0</span>
 </div>
 
 <!-- ══ SAFARI WARNING BANNER ══ -->
@@ -1120,6 +1121,8 @@
 </div>
 
 <script>
+const MODO_COMPARTIDO = location.search.includes('compartido');
+
 // ══ CLAVES ══
 const CLAVE_T = 'vj_temporadas_v1';
 const CLAVE_D = 'vj_destinos_v1';
@@ -1196,7 +1199,6 @@ function generarJSON() {
 }
 
 // ══ GOOGLE DRIVE OAuth (patrón gapi + gsi idéntico al index.html) ══
-const MODO_COMPARTIDO = location.search.includes('compartido');
 const CLIENT_ID  = '940633332310-8jvdkccdfeedcbna2sl928bpk3lfe2k1.apps.googleusercontent.com';
 const SCOPES     = MODO_COMPARTIDO
   ? 'https://www.googleapis.com/auth/drive'
