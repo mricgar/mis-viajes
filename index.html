@@ -455,6 +455,8 @@
   .kanban-btn.danger { color:var(--red-bright); border-color:rgba(192,33,42,0.3); }
   .kanban-btn.danger:hover { background:rgba(192,33,42,0.1); }
   .kanban-empty { text-align:center; padding:20px 10px; opacity:0.4; font-size:13px; color:var(--grey7); }
+  .kanban-col.drag-over { border-color:var(--red); background:rgba(192,33,42,0.05); }
+  html.tema-claro .kanban-col.drag-over { background:rgba(192,98,42,0.06); }
 
   /* ══ ITEMS GRID (vista 3) ══ */
   .items-grid {
@@ -2037,7 +2039,11 @@ function renderKanban(lista) {
     const colItems = lista.filter(i=>i.estado===col.estado);
     const cards = colItems.length ? colItems.map(it => {
       const esDescartado = it.estado === 'descartado';
-      return `<div class="kanban-card" data-tipo="${it.tipo}" onclick="abrirModalItem(${it.id})">
+      return `<div class="kanban-card" data-tipo="${it.tipo}" data-id="${it.id}"
+          draggable="true"
+          ondragstart="kDragStart(event,${it.id})"
+          ondragend="kDragEnd(event)"
+          onclick="abrirModalItem(${it.id})">
         <div class="kanban-card-tipo">${TIPO_EMOJI[it.tipo]||'📌'} ${it.tipo}</div>
         ${it.titulo?`<div class="kanban-card-title">${it.titulo}</div>`:''}
         ${it.precio?`<div class="kanban-card-price">${it.precio}</div>`:''}
@@ -2053,7 +2059,11 @@ function renderKanban(lista) {
       </div>`;
     }).join('') : `<div class="kanban-empty">Sin opciones</div>`;
 
-    return `<div class="kanban-col">
+    return `<div class="kanban-col" data-estado="${col.estado}"
+        ondragover="kDragOver(event)"
+        ondragenter="kDragEnter(event)"
+        ondragleave="kDragLeave(event)"
+        ondrop="kDrop(event,'${col.estado}')">
       <div class="kanban-col-stripe" style="background:${col.color}"></div>
       <div class="kanban-col-header">
         <span class="kanban-col-title">${col.label}</span>
@@ -2062,6 +2072,49 @@ function renderKanban(lista) {
       ${cards}
     </div>`;
   }).join('');
+}
+
+let _kDragId = null;
+
+function kDragStart(e, id) {
+  _kDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.target.style.opacity = '0.4', 0);
+}
+
+function kDragEnd(e) {
+  e.target.style.opacity = '';
+  document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+}
+
+function kDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function kDragEnter(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+
+function kDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+}
+
+function kDrop(e, nuevoEstado) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (_kDragId === null) return;
+  const item = items.find(i => i.id === _kDragId);
+  if (item && item.estado !== nuevoEstado) {
+    item.estado = nuevoEstado;
+    guardarTodo();
+    renderDetalle();
+    toast(`${ESTADO_EMOJI[nuevoEstado]} Movido a ${nuevoEstado}`);
+  }
+  _kDragId = null;
 }
 
 function renderDetalle() {
