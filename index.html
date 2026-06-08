@@ -419,10 +419,12 @@
   html.tema-claro .kanban-col-count { background:#e8d9c4; color:#4a3f35; }
   .kanban-col-stripe { height:3px; border-radius:2px; margin-bottom:10px; }
   .kanban-card {
-    border-radius:12px; padding:12px; margin-bottom:8px; cursor:pointer;
+    border-radius:12px; padding:12px; margin-bottom:8px; cursor:grab;
     border:1px solid var(--border); border-left:3px solid var(--red);
     transition:transform 0.15s, box-shadow 0.15s; position:relative;
+    user-select:none; -webkit-user-drag:element;
   }
+  .kanban-card:active { cursor:grabbing; }
   html:not(.tema-claro) .kanban-card { background:var(--grey2); }
   html.tema-claro        .kanban-card { background:white; border-color:#e8d9c4; }
   .kanban-card:hover { transform:translateY(-2px); box-shadow:0 4px 14px var(--shadow); }
@@ -877,8 +879,8 @@
       Mostrar descartados
     </label>
     <div class="vista-toggle">
-      <button class="btn-vista activo" id="btn-vista-grid" onclick="setVistaDetalle('grid')">▦ Lista</button>
-      <button class="btn-vista" id="btn-vista-kanban" onclick="setVistaDetalle('kanban')">⬛ Kanban</button>
+      <button class="btn-vista" id="btn-vista-grid" onclick="setVistaDetalle('grid')">▦ Lista</button>
+      <button class="btn-vista activo" id="btn-vista-kanban" onclick="setVistaDetalle('kanban')">⬛ Kanban</button>
     </div>
   </div>
   <div class="items-grid" id="items-grid"></div>
@@ -1069,7 +1071,7 @@ let editandoItemId  = null;
 let editandoDestId  = null;
 let editandoTempId  = null;
 let filtroDetalle   = 'todos';
-let vistaDetalle    = 'grid';
+let vistaDetalle    = 'kanban';
 let menuOpen        = false;
 
 const TIPO_EMOJI   = { vuelo:'✈', hotel:'🏨', actividad:'🎭', transporte:'🚗', general:'📌' };
@@ -2079,11 +2081,14 @@ let _kDragId = null;
 function kDragStart(e, id) {
   _kDragId = id;
   e.dataTransfer.effectAllowed = 'move';
-  setTimeout(() => e.target.style.opacity = '0.4', 0);
+  e.dataTransfer.setData('text/plain', id);
+  const card = e.target.closest('.kanban-card');
+  setTimeout(() => { if (card) card.style.opacity = '0.4'; }, 0);
 }
 
 function kDragEnd(e) {
-  e.target.style.opacity = '';
+  const card = e.target.closest('.kanban-card');
+  if (card) card.style.opacity = '';
   document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
 }
 
