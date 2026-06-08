@@ -1173,18 +1173,13 @@ function actualizarBannerDrive(estado, texto) {
 // ── Guardar en Drive ──────────────────────────────────────────────────────
 async function subirADrive() {
   if (!driveFileId) return;
-  const token = gapi.client.getToken();
-  await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=media',
-    {
-      method: 'PATCH',
-      headers: {
-        'Authorization': 'Bearer ' + token.access_token,
-        'Content-Type': 'application/json'
-      },
-      body: generarJSON()
-    }
-  );
+  await gapi.client.request({
+    path: '/upload/drive/v3/files/' + driveFileId,
+    method: 'PATCH',
+    params: { uploadType: 'media' },
+    headers: { 'Content-Type': 'application/json' },
+    body: generarJSON()
+  });
   localStorage.setItem('vj_drive_sync', Date.now().toString());
 }
 
