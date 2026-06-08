@@ -383,6 +383,79 @@
   }
   html.tema-claro .dest-notas-mini { color: #4a3f35; }
 
+  /* ══ VISTA TOGGLE ══ */
+  .vista-toggle { display:flex; gap:6px; padding:8px 16px 4px; }
+  .btn-vista {
+    border:1.5px solid var(--grey5); background:transparent; color:var(--grey7);
+    border-radius:8px; padding:5px 12px; font-size:12px; font-family:'DM Sans',sans-serif;
+    cursor:pointer; transition:all 0.15s;
+  }
+  html.tema-claro .btn-vista { border-color:#d0bfa8; color:#4a3f35; }
+  .btn-vista.activo { background:var(--grey4); color:var(--grey9); border-color:var(--grey5); }
+  html.tema-claro .btn-vista.activo { background:#e8d9c4; color:#1a1410; }
+
+  /* ══ KANBAN ══ */
+  .kanban-board {
+    display:none; padding:12px 16px 100px;
+    gap:12px; overflow-x:auto;
+  }
+  .kanban-board.activo { display:flex; }
+  .kanban-col {
+    min-width:210px; flex:1;
+    border-radius:16px; padding:12px;
+    border:1px solid var(--border);
+  }
+  html:not(.tema-claro) .kanban-col { background:var(--grey3); }
+  html.tema-claro        .kanban-col { background:#fffcf8; border-color:#e8d9c4; }
+  .kanban-col-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+  }
+  .kanban-col-title { font-size:12px; font-weight:500; color:var(--grey8); }
+  html.tema-claro .kanban-col-title { color:#2a1f18; }
+  .kanban-col-count {
+    font-size:11px; background:var(--grey4); color:var(--grey7);
+    border-radius:20px; padding:1px 8px;
+  }
+  html.tema-claro .kanban-col-count { background:#e8d9c4; color:#4a3f35; }
+  .kanban-col-stripe { height:3px; border-radius:2px; margin-bottom:10px; }
+  .kanban-card {
+    border-radius:12px; padding:12px; margin-bottom:8px; cursor:pointer;
+    border:1px solid var(--border); border-left:3px solid var(--red);
+    transition:transform 0.15s, box-shadow 0.15s; position:relative;
+  }
+  html:not(.tema-claro) .kanban-card { background:var(--grey2); }
+  html.tema-claro        .kanban-card { background:white; border-color:#e8d9c4; }
+  .kanban-card:hover { transform:translateY(-2px); box-shadow:0 4px 14px var(--shadow); }
+  .kanban-card[data-tipo="vuelo"]      { border-left-color:#5588aa; }
+  .kanban-card[data-tipo="hotel"]      { border-left-color:#557755; }
+  .kanban-card[data-tipo="actividad"]  { border-left-color:#8855aa; }
+  .kanban-card[data-tipo="transporte"] { border-left-color:#aa8833; }
+  .kanban-card-tipo { font-size:10px; color:var(--grey6); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; }
+  .kanban-card-title {
+    font-family:'Playfair Display',serif; font-size:14px; font-weight:700;
+    color:var(--grey9); line-height:1.3; margin-bottom:5px;
+  }
+  html.tema-claro .kanban-card-title { color:#1a1410; }
+  .kanban-card-price { font-family:'Playfair Display',serif; font-size:15px; font-weight:700; color:var(--red-bright); margin-bottom:4px; }
+  .kanban-card-meta { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--grey7); }
+  html.tema-claro .kanban-card-meta { color:#4a3f35; }
+  .kanban-card-fav { opacity:0; transition:opacity 0.15s; font-size:13px; }
+  .kanban-card:hover .kanban-card-fav,
+  .kanban-card-fav.visible { opacity:1; }
+  .kanban-card-actions { display:flex; gap:5px; margin-top:8px; border-top:1px solid var(--border); padding-top:7px; }
+  html.tema-claro .kanban-card-actions { border-top-color:#e8d9c4; }
+  .kanban-btn {
+    flex:1; padding:4px 6px; border-radius:6px; font-size:11px;
+    font-family:'DM Sans',sans-serif; cursor:pointer; text-align:center;
+    border:1px solid var(--grey5); background:transparent; color:var(--grey7); transition:all 0.12s;
+  }
+  html.tema-claro .kanban-btn { border-color:#d0bfa8; color:#4a3f35; }
+  .kanban-btn:hover { background:var(--grey4); color:var(--grey9); }
+  html.tema-claro .kanban-btn:hover { background:#f0e4d0; color:#1a1410; }
+  .kanban-btn.danger { color:var(--red-bright); border-color:rgba(192,33,42,0.3); }
+  .kanban-btn.danger:hover { background:rgba(192,33,42,0.1); }
+  .kanban-empty { text-align:center; padding:20px 10px; opacity:0.4; font-size:13px; color:var(--grey7); }
+
   /* ══ ITEMS GRID (vista 3) ══ */
   .items-grid {
     padding: 12px 16px 100px;
@@ -796,11 +869,18 @@
     <button class="filter-chip" onclick="filtrarDetalle('general',this)">📌 General</button>
   </div>
   <div class="stats" id="stats-detalle"></div>
-  <label class="toggle-descartados">
-    <input type="checkbox" id="show-descartados" checked onchange="renderDetalle()">
-    Mostrar descartados
-  </label>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px;">
+    <label class="toggle-descartados" style="padding:0">
+      <input type="checkbox" id="show-descartados" checked onchange="renderDetalle()">
+      Mostrar descartados
+    </label>
+    <div class="vista-toggle">
+      <button class="btn-vista activo" id="btn-vista-grid" onclick="setVistaDetalle('grid')">▦ Lista</button>
+      <button class="btn-vista" id="btn-vista-kanban" onclick="setVistaDetalle('kanban')">⬛ Kanban</button>
+    </div>
+  </div>
   <div class="items-grid" id="items-grid"></div>
+  <div class="kanban-board" id="kanban-board"></div>
 </div>
 
 <!-- ══ MODAL: TEMPORADA ══ -->
@@ -987,6 +1067,7 @@ let editandoItemId  = null;
 let editandoDestId  = null;
 let editandoTempId  = null;
 let filtroDetalle   = 'todos';
+let vistaDetalle    = 'grid';
 let menuOpen        = false;
 
 const TIPO_EMOJI   = { vuelo:'✈', hotel:'🏨', actividad:'🎭', transporte:'🚗', general:'📌' };
@@ -1933,9 +2014,63 @@ function renderDestinos() {
 }
 
 // ══ RENDER DETALLE ══
+function setVistaDetalle(modo) {
+  vistaDetalle = modo;
+  document.getElementById('btn-vista-grid').classList.toggle('activo', modo==='grid');
+  document.getElementById('btn-vista-kanban').classList.toggle('activo', modo==='kanban');
+  renderDetalle();
+}
+
+function renderKanban(lista) {
+  const board = document.getElementById('kanban-board');
+  board.classList.add('activo');
+  document.getElementById('items-grid').style.display = 'none';
+
+  const cols = [
+    { estado:'investigando', label:'Investigando', color:'#888780' },
+    { estado:'interesa',     label:'Me interesa',  color:'#5588aa' },
+    { estado:'reservado',    label:'Reservado',    color:'#557755' },
+    { estado:'descartado',   label:'Descartado',   color:'#c0212a' },
+  ];
+
+  board.innerHTML = cols.map(col => {
+    const colItems = lista.filter(i=>i.estado===col.estado);
+    const cards = colItems.length ? colItems.map(it => {
+      const esDescartado = it.estado === 'descartado';
+      return `<div class="kanban-card" data-tipo="${it.tipo}" onclick="abrirModalItem(${it.id})">
+        <div class="kanban-card-tipo">${TIPO_EMOJI[it.tipo]||'📌'} ${it.tipo}</div>
+        ${it.titulo?`<div class="kanban-card-title">${it.titulo}</div>`:''}
+        ${it.precio?`<div class="kanban-card-price">${it.precio}</div>`:''}
+        <div class="kanban-card-meta">
+          <span>${it.fechas||''}</span>
+          <span class="kanban-card-fav${it.favorito?' visible':''}">⭐</span>
+        </div>
+        <div class="kanban-card-actions" onclick="event.stopPropagation()">
+          <button class="kanban-btn" onclick="abrirModalItem(${it.id})">✏ Editar</button>
+          <button class="kanban-btn ${esDescartado?'':'danger'}" onclick="toggleDescartadoItem(${it.id})">${esDescartado?'↩':'❌'}</button>
+          <button class="kanban-btn danger" onclick="eliminarItem(${it.id})">🗑</button>
+        </div>
+      </div>`;
+    }).join('') : `<div class="kanban-empty">Sin opciones</div>`;
+
+    return `<div class="kanban-col">
+      <div class="kanban-col-stripe" style="background:${col.color}"></div>
+      <div class="kanban-col-header">
+        <span class="kanban-col-title">${col.label}</span>
+        <span class="kanban-col-count">${colItems.length}</span>
+      </div>
+      ${cards}
+    </div>`;
+  }).join('');
+}
+
 function renderDetalle() {
   const grid  = document.getElementById('items-grid');
+  const board = document.getElementById('kanban-board');
   const stats = document.getElementById('stats-detalle');
+
+  grid.style.display  = '';
+  board.classList.remove('activo');
   let lista = items.filter(i=>i.destinoId===destinoActual);
   const total = lista.length;
   const favs  = lista.filter(i=>i.favorito).length;
@@ -1952,6 +2087,11 @@ function renderDetalle() {
 
   const showDesc = document.getElementById('show-descartados');
   if (showDesc && !showDesc.checked) lista = lista.filter(i=>i.estado!=='descartado');
+
+  if (vistaDetalle === 'kanban') {
+    renderKanban(lista);
+    return;
+  }
 
   if (!lista.length) {
     grid.innerHTML = `<div class="empty">
