@@ -1376,7 +1376,10 @@ function volverATemporadas() {
 function irADestino(id) {
   destinoActual = id;
   filtroDetalle = 'todos';
+  vistaDetalle  = 'kanban';
   document.querySelectorAll('#filtros-detalle .filter-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+  document.getElementById('btn-vista-grid').classList.remove('activo');
+  document.getElementById('btn-vista-kanban').classList.add('activo');
   const dest = destinos.find(d=>d.id===id);
   const temp = temporadas.find(t=>t.id===temporadaActual);
   document.getElementById('detalle-titulo').textContent = dest.emoji + ' ' + dest.nombre;
